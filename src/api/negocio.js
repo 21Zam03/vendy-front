@@ -24,6 +24,7 @@ export function toNestedBusiness(flat) {
       font: flat.font ?? 'sans',
       radius: flat.radius ?? 'soft',
       cover: flat.cover ?? 'gradient',
+      coverImageUrl: flat.coverImageUrl ?? '',
       catalogLayout: flat.catalogLayout ?? 'grid',
     },
     paymentMethods: (flat.metodosPago ?? []).map((m) => ({ key: m.tipo, value: m.detalle ?? '' })),
@@ -50,6 +51,7 @@ export function toFlatBusiness(nested) {
     font: nested.appearance.font,
     radius: nested.appearance.radius,
     cover: nested.appearance.cover,
+    coverImageUrl: nested.appearance.coverImageUrl || null,
     catalogLayout: nested.appearance.catalogLayout,
     metodosPago: nested.paymentMethods.map((m) => ({ tipo: m.key, detalle: m.value || null })),
   }
@@ -69,4 +71,12 @@ export function uploadNegocioLogo(file) {
   const formData = new FormData()
   formData.append('file', file)
   return apiFetch('/api/v1/negocio/logo', { method: 'POST', body: formData })
+}
+
+// Sube la foto de portada tal cual (el backend no la comprime) y devuelve { url } para
+// incluirla en el siguiente guardado del negocio.
+export function uploadNegocioCoverImage(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return apiFetch('/api/v1/negocio/portada', { method: 'POST', body: formData })
 }

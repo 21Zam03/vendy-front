@@ -13,7 +13,7 @@ function emptyBusiness() {
     logoInitials: '',
     logoUrl: '',
     social: { instagram: '', tiktok: '', facebook: '' },
-    appearance: { accentColor: 'brand', background: 'white', font: 'sans', radius: 'soft', cover: 'gradient', catalogLayout: 'grid' },
+    appearance: { accentColor: 'brand', background: 'white', font: 'sans', radius: 'soft', cover: 'gradient', coverImageUrl: '', catalogLayout: 'grid' },
     paymentMethods: [],
     links: [],
   }

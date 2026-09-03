@@ -107,7 +107,7 @@ onBeforeUnmount(() => {
 
     <template v-else>
       <div
-        class="relative h-56 select-none sm:h-64"
+        class="relative h-56 select-none overflow-hidden sm:h-64"
         @touchstart="onTouchStart"
         @touchend="onTouchEnd"
       >

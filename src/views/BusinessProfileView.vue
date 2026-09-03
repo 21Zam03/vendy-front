@@ -41,7 +41,7 @@ import { accentClasses, coverClasses, radiusValue } from '@/utils/theme'
 import { useToast } from '@/composables/useToast'
 import { ApiError } from '@/api/http'
 import { listEnlaces, createEnlace, deleteEnlace } from '@/api/enlaces'
-import { uploadNegocioLogo } from '@/api/negocio'
+import { uploadNegocioLogo, uploadNegocioCoverImage } from '@/api/negocio'
 
 const { state: authState } = useAuth()
 
@@ -142,6 +142,24 @@ async function handleLogoUpload(event) {
     toastError('No se pudo subir la foto', { description: err.message })
   } finally {
     uploadingLogo.value = false
+  }
+}
+
+const uploadingCover = ref(false)
+
+async function handleCoverUpload(event) {
+  const file = event.target.files?.[0]
+  event.target.value = ''
+  if (!file) return
+
+  uploadingCover.value = true
+  try {
+    const { url } = await uploadNegocioCoverImage(file)
+    business.appearance.coverImageUrl = url
+  } catch (err) {
+    toastError('No se pudo subir la foto', { description: err.message })
+  } finally {
+    uploadingCover.value = false
   }
 }
 
@@ -420,7 +438,13 @@ function notifyAccountUnavailable() {
 
           <!-- vista previa en vivo -->
           <div class="mb-6 overflow-hidden rounded-2xl border border-slate-200">
-            <div class="h-16" :class="previewCover" />
+            <img
+              v-if="business.appearance.cover === 'imagen' && business.appearance.coverImageUrl"
+              :src="business.appearance.coverImageUrl"
+              class="h-16 w-full object-cover"
+              alt=""
+            />
+            <div v-else class="h-16" :class="previewCover" />
             <div class="flex flex-col items-center gap-2 px-4 pb-5 pt-0" :class="[previewBackground, previewFontClass]">
               <span
                 class="-mt-6 flex size-12 items-center justify-center border-4 border-white bg-slate-900 text-sm font-semibold text-white shadow"
@@ -523,7 +547,7 @@ function notifyAccountUnavailable() {
 
             <div>
               <p class="mb-3 text-sm font-medium text-slate-700">Portada</p>
-              <div class="grid grid-cols-2 gap-3">
+              <div class="grid grid-cols-3 gap-3">
                 <button
                   v-for="c in coverOptions"
                   :key="c.key"
@@ -535,6 +559,56 @@ function notifyAccountUnavailable() {
                   <span class="h-10 w-full" :class="coverClasses(business.appearance.accentColor, c.key)" />
                   <span class="pb-2 text-xs text-slate-500">{{ c.label }}</span>
                 </button>
+                <button
+                  type="button"
+                  class="flex flex-col items-center gap-2 overflow-hidden rounded-xl border-2 transition-colors"
+                  :class="business.appearance.cover === 'imagen' ? 'border-brand-500' : 'border-slate-200 hover:border-slate-300'"
+                  @click="business.appearance.cover = 'imagen'"
+                >
+                  <span class="flex h-10 w-full items-center justify-center bg-slate-100">
+                    <img
+                      v-if="business.appearance.coverImageUrl"
+                      :src="business.appearance.coverImageUrl"
+                      class="h-full w-full object-cover"
+                      alt=""
+                    />
+                    <ImageOff v-else class="size-4 text-slate-400" />
+                  </span>
+                  <span class="pb-2 text-xs text-slate-500">Imagen</span>
+                </button>
+              </div>
+
+              <div v-if="business.appearance.cover === 'imagen'" class="mt-3 flex items-center gap-3 rounded-xl border border-slate-200 p-3">
+                <label
+                  class="relative flex h-14 w-24 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-slate-100"
+                >
+                  <img
+                    v-if="business.appearance.coverImageUrl"
+                    :src="business.appearance.coverImageUrl"
+                    class="h-full w-full object-cover"
+                    alt=""
+                  />
+                  <ImageOff v-else class="size-5 text-slate-300" />
+                  <span
+                    v-if="uploadingCover"
+                    class="absolute inset-0 flex items-center justify-center bg-slate-900/50"
+                  >
+                    <Loader2 class="size-5 animate-spin text-white" />
+                  </span>
+                  <input type="file" accept="image/*" class="hidden" :disabled="uploadingCover" @change="handleCoverUpload" />
+                </label>
+                <div class="flex flex-col gap-1">
+                  <p class="text-xs text-slate-500">Imagen de fondo para la cabecera de tu perfil público. JPG, PNG, WEBP o GIF, sin comprimir.</p>
+                  <button
+                    v-if="business.appearance.coverImageUrl"
+                    type="button"
+                    class="flex w-fit items-center gap-1 text-xs font-medium text-rose-600 hover:text-rose-700"
+                    @click="business.appearance.coverImageUrl = ''"
+                  >
+                    <ImageOff class="size-3.5" />
+                    Quitar foto
+                  </button>
+                </div>
               </div>
             </div>
 

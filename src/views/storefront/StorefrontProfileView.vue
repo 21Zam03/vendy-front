@@ -111,7 +111,15 @@ async function shareProfile() {
     />
 
     <div v-else class="relative">
-      <div class="h-36 w-full sm:h-44" :class="cover" />
+      <div class="sm:mx-auto sm:max-w-2xl sm:px-6">
+        <img
+          v-if="business.appearance.cover === 'imagen' && business.appearance.coverImageUrl"
+          :src="business.appearance.coverImageUrl"
+          class="h-48 w-full object-cover sm:h-60 sm:rounded-b-2xl"
+          alt=""
+        />
+        <div v-else class="h-48 w-full sm:h-60 sm:rounded-b-2xl" :class="cover" />
+      </div>
 
       <div class="absolute right-4 top-4 flex items-center gap-2">
         <Transition
