@@ -1,10 +1,11 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { MessageCircle, LayoutGrid, MapPin, Camera, Music2, ThumbsUp, ChevronRight, ExternalLink, Sparkles, Wallet, Share2, Check } from '@lucide/vue'
+import { MessageCircle, LayoutGrid, MapPin, Camera, Music2, ThumbsUp, ChevronRight, ExternalLink, Sparkles, Wallet, Forward, Check } from '@lucide/vue'
 import StorefrontLayout from '@/layouts/StorefrontLayout.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import FeaturedProductsCarousel from '@/components/storefront/FeaturedProductsCarousel.vue'
+import AmbientBlobField from '@/components/storefront/AmbientBlobField.vue'
 import { getPerfilPublico, getDestacadosPublico, getColeccionesPublico, buildNegocioPreviewUrl } from '@/api/tienda'
 import { buildWhatsAppLink } from '@/utils/whatsapp'
 import { accentClasses, coverClasses, radiusValue } from '@/utils/theme'
@@ -110,44 +111,48 @@ async function shareProfile() {
       class="min-h-[60vh]"
     />
 
-    <div v-else class="relative">
+    <div v-else class="relative z-0">
+      <AmbientBlobField :accent-color="business.appearance.accentColor" />
+
       <div class="sm:mx-auto sm:max-w-2xl sm:px-6">
-        <img
-          v-if="business.appearance.cover === 'imagen' && business.appearance.coverImageUrl"
-          :src="business.appearance.coverImageUrl"
-          class="h-48 w-full object-cover sm:h-60 sm:rounded-b-2xl"
-          alt=""
-        />
-        <div v-else class="h-48 w-full sm:h-60 sm:rounded-b-2xl" :class="cover" />
+        <div class="relative">
+          <img
+            v-if="business.appearance.cover === 'imagen' && business.appearance.coverImageUrl"
+            :src="business.appearance.coverImageUrl"
+            class="h-48 w-full object-cover sm:h-60 sm:rounded-b-2xl"
+            alt=""
+          />
+          <div v-else class="h-48 w-full sm:h-60 sm:rounded-b-2xl" :class="cover" />
+
+          <div class="absolute right-4 top-4 flex items-center gap-2">
+            <Transition
+              enter-active-class="transition duration-200 ease-out"
+              enter-from-class="opacity-0 translate-x-1"
+              leave-active-class="transition duration-150 ease-in"
+              leave-to-class="opacity-0"
+            >
+              <span
+                v-if="shared"
+                class="rounded-full border border-white/30 bg-slate-900/80 px-3 py-1.5 text-xs font-medium text-white shadow-lg backdrop-blur-md"
+              >
+                ¡Enlace copiado!
+              </span>
+            </Transition>
+
+            <button
+              type="button"
+              class="group flex size-11 shrink-0 items-center justify-center rounded-full border border-white/30 bg-white/20 text-white shadow-lg backdrop-blur-md transition-all hover:scale-105 hover:bg-white/30 active:scale-95"
+              title="Compartir"
+              @click="shareProfile"
+            >
+              <Check v-if="shared" class="size-5" />
+              <Forward v-else class="size-[18px] transition-transform group-hover:scale-110" />
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div class="absolute right-4 top-4 flex items-center gap-2">
-        <Transition
-          enter-active-class="transition duration-200 ease-out"
-          enter-from-class="opacity-0 translate-x-1"
-          leave-active-class="transition duration-150 ease-in"
-          leave-to-class="opacity-0"
-        >
-          <span
-            v-if="shared"
-            class="rounded-full border border-white/30 bg-slate-900/80 px-3 py-1.5 text-xs font-medium text-white shadow-lg backdrop-blur-md"
-          >
-            ¡Enlace copiado!
-          </span>
-        </Transition>
-
-        <button
-          type="button"
-          class="group flex size-11 shrink-0 items-center justify-center rounded-full border border-white/30 bg-white/20 text-white shadow-lg backdrop-blur-md transition-all hover:scale-105 hover:bg-white/30 active:scale-95"
-          title="Compartir"
-          @click="shareProfile"
-        >
-          <Check v-if="shared" class="size-5" />
-          <Share2 v-else class="size-[18px] transition-transform group-hover:scale-110" />
-        </button>
-      </div>
-
-      <div class="mx-auto -mt-14 flex max-w-sm flex-col items-center px-4 text-center sm:px-6">
+      <div class="relative mx-auto -mt-14 flex max-w-sm flex-col items-center px-4 text-center sm:px-6">
         <span
           class="flex size-24 items-center justify-center overflow-hidden border-4 border-white bg-slate-900 text-2xl font-semibold text-white shadow-lg"
           :style="{ borderRadius: radius }"

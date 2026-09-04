@@ -454,12 +454,6 @@ function generateCatalogPost() {
               <img v-if="p.imagenUrl" :src="p.imagenUrl" class="h-full w-full object-cover" alt="" />
               <template v-else>{{ p.emoji }}</template>
               <span
-                v-if="p.stock === 0"
-                class="absolute left-2 top-2 rounded-full bg-slate-900/80 px-2 py-0.5 text-[10px] font-semibold text-white"
-              >
-                Agotado
-              </span>
-              <span
                 v-if="p.precioComparacion"
                 class="absolute right-2 top-2 rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-semibold text-white"
               >
@@ -516,8 +510,7 @@ function generateCatalogPost() {
                 <span v-if="p.precioComparacion" class="text-xs text-slate-400 line-through">{{ formatCurrency(p.precioComparacion) }}</span>
               </div>
 
-              <div class="mt-2 flex items-center justify-between">
-                <span class="text-xs text-slate-400">Stock: {{ p.stock }}</span>
+              <div class="mt-2 flex items-center justify-end">
                 <button
                   class="relative h-5 w-9 shrink-0 rounded-full transition-colors"
                   :class="p.activo ? 'bg-brand-600' : 'bg-slate-200'"
@@ -626,18 +619,15 @@ function generateCatalogPost() {
           <BaseInput v-model="form.precioComparacion" type="number" label="Precio anterior (opcional)" placeholder="0" />
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
-          <BaseInput v-model="form.stock" type="number" label="Stock" placeholder="0" :error="formErrors.stock" />
-          <div>
-            <label class="mb-1.5 block text-sm font-medium text-slate-700">Categoría</label>
-            <select
-              v-model="form.categoriaId"
-              class="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
-            >
-              <option :value="null">Sin categoría</option>
-              <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.emoji }} {{ c.nombre }}</option>
-            </select>
-          </div>
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-slate-700">Categoría</label>
+          <select
+            v-model="form.categoriaId"
+            class="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+          >
+            <option :value="null">Sin categoría</option>
+            <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.emoji }} {{ c.nombre }}</option>
+          </select>
         </div>
 
         <div>

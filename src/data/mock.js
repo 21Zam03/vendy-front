@@ -36,6 +36,17 @@ export const coverOptions = [
   { key: 'gradient', label: 'Degradado' },
 ]
 
+// Cabeceras temáticas de temporada, solo disponibles para colecciones (CollectionsView).
+// El "key" debe coincidir con los valores del enum Cover del backend.
+export const seasonalCoverOptions = [
+  { key: 'navidad', label: 'Navidad', emoji: '🎄' },
+  { key: 'halloween', label: 'Halloween', emoji: '🎃' },
+  { key: 'san_valentin', label: 'San Valentín', emoji: '💕' },
+  { key: 'verano', label: 'Verano', emoji: '☀️' },
+  { key: 'black_friday', label: 'Black Friday', emoji: '🏷️' },
+  { key: 'ano_nuevo', label: 'Año Nuevo', emoji: '🎆' },
+]
+
 export const catalogLayoutOptions = [
   { key: 'grid', label: 'Clásico', description: 'El de siempre: barra superior con búsqueda, categorías y tarjetas en grid.' },
   { key: 'pro', label: 'PRO — Minimalista', description: 'Sin barra superior, fotos grandes y verticales. Estilo tienda de moda (Zara, Mango).' },

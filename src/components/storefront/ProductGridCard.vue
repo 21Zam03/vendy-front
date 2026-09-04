@@ -21,12 +21,6 @@ defineProps({
       >
         -{{ Math.round((1 - product.precio / product.precioComparacion) * 100) }}%
       </span>
-      <span
-        v-if="product.stock === 0"
-        class="absolute inset-0 flex items-center justify-center bg-slate-900/50 text-xs font-semibold uppercase tracking-wide text-white"
-      >
-        Agotado
-      </span>
     </div>
 
     <div class="flex flex-1 flex-col p-3.5">
@@ -37,12 +31,6 @@ defineProps({
           {{ formatCurrency(product.precioComparacion) }}
         </span>
       </div>
-      <p
-        class="mt-1 text-[11px]"
-        :class="product.stock === 0 ? 'text-rose-500' : product.stock <= 5 ? 'text-amber-600' : 'text-emerald-600'"
-      >
-        {{ product.stock === 0 ? 'Sin stock' : product.stock <= 5 ? `¡Últimas ${product.stock}!` : 'Disponible' }}
-      </p>
     </div>
   </router-link>
 </template>

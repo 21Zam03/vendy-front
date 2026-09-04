@@ -25,6 +25,7 @@ import {
   fontOptions,
   radiusOptions,
   coverOptions,
+  seasonalCoverOptions,
   catalogLayoutOptions,
 } from '@/data/mock'
 import { useBusiness } from '@/composables/useBusiness'
@@ -32,6 +33,7 @@ import { listCatalogos, createCatalogo, updateCatalogo, deleteCatalogo } from '@
 import { listProductos } from '@/api/productos'
 import { ApiError } from '@/api/http'
 import { coverClasses } from '@/utils/theme'
+import ThemedCoverPattern from '@/components/ui/ThemedCoverPattern.vue'
 import { slugify, formatCurrency } from '@/utils/format'
 import { useToast } from '@/composables/useToast'
 
@@ -208,7 +210,9 @@ const previewCover = computed(() => coverClasses(form.value.accentColor, form.va
 
     <div v-else-if="collections.length" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <BaseCard v-for="c in collections" :key="c.id" :padded="false" class="overflow-hidden">
-        <div class="h-16" :class="coverClasses(c.accentColor, c.cover)" />
+        <div class="relative h-16" :class="coverClasses(c.accentColor, c.cover)">
+          <ThemedCoverPattern :cover="c.cover" />
+        </div>
         <div class="p-4">
           <div class="flex items-start justify-between gap-2">
             <div class="min-w-0">
@@ -302,7 +306,9 @@ const previewCover = computed(() => coverClasses(form.value.accentColor, form.va
 
         <div>
           <p class="mb-2 text-sm font-medium text-slate-700">Estilo de esta colección</p>
-          <div class="h-10 w-full rounded-lg" :class="previewCover" />
+          <div class="relative h-10 w-full rounded-lg" :class="previewCover">
+            <ThemedCoverPattern :cover="form.cover" />
+          </div>
           <div class="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
             <div>
               <label class="mb-1 block text-xs text-slate-500">Color de acento</label>
@@ -331,7 +337,12 @@ const previewCover = computed(() => coverClasses(form.value.accentColor, form.va
             <div>
               <label class="mb-1 block text-xs text-slate-500">Portada</label>
               <select v-model="form.cover" class="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100">
-                <option v-for="c in coverOptions" :key="c.key" :value="c.key">{{ c.label }}</option>
+                <optgroup label="Colores">
+                  <option v-for="c in coverOptions" :key="c.key" :value="c.key">{{ c.label }}</option>
+                </optgroup>
+                <optgroup label="Temporada">
+                  <option v-for="c in seasonalCoverOptions" :key="c.key" :value="c.key">{{ c.emoji }} {{ c.label }}</option>
+                </optgroup>
               </select>
             </div>
             <div>

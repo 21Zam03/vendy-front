@@ -59,7 +59,7 @@ async function handleLogout() {
         </template>
         <template #content>
           <div class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Consultas recientes
+            Intentos de consulta recientes
           </div>
           <div class="max-h-80 overflow-y-auto">
             <div
@@ -70,13 +70,13 @@ async function handleLogout() {
               <MessageCircle class="mt-0.5 size-4 shrink-0 text-whatsapp-600" />
               <div class="min-w-0">
                 <p class="text-xs text-slate-600 leading-snug">
-                  Alguien consultó por <span class="font-medium text-slate-900">{{ i.productoNombre }}</span>
+                  Alguien intentó consultar por <span class="font-medium text-slate-900">{{ i.productoNombre }}</span>
                 </p>
                 <p class="mt-0.5 text-[11px] text-slate-400">{{ timeAgo(i.creadoEn) }}</p>
               </div>
             </div>
             <p v-if="!recentInquiries.length" class="px-3 py-4 text-center text-xs text-slate-400">
-              Todavía no hay consultas
+              Todavía no hay intentos de consulta
             </p>
           </div>
         </template>

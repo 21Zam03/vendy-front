@@ -6,9 +6,10 @@ import StorefrontLayout from '@/layouts/StorefrontLayout.vue'
 import ProductGridCard from '@/components/storefront/ProductGridCard.vue'
 import ProductEditorialCard from '@/components/storefront/ProductEditorialCard.vue'
 import ProductListRow from '@/components/storefront/ProductListRow.vue'
+import CollectionThemeBanner from '@/components/storefront/CollectionThemeBanner.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { getPerfilPublico, getColeccionPublico, getSeccionesPublico } from '@/api/tienda'
-import { accentClasses } from '@/utils/theme'
+import { accentClasses, isThemedCover } from '@/utils/theme'
 import { setPageMeta } from '@/utils/head'
 import { groupBySections } from '@/utils/sections'
 
@@ -43,6 +44,7 @@ onMounted(load)
 watch(() => [route.params.slug, route.params.collectionSlug], load)
 
 const accent = computed(() => (collection.value ? accentClasses(collection.value.appearance.accentColor) : null))
+const isThemedCollection = computed(() => isThemedCover(collection.value?.appearance.cover))
 const layout = computed(() => collection.value?.appearance.catalogLayout ?? 'grid')
 const isPro = computed(() => layout.value === 'pro')
 const cardComponent = computed(
@@ -88,10 +90,13 @@ const groups = computed(() => groupBySections(filtered.value, secciones.value))
           Volver
         </router-link>
 
-        <h1 class="mt-6 text-center text-sm font-semibold uppercase tracking-[0.2em] text-slate-900">
-          {{ collection.name }}
-        </h1>
-        <p class="mt-1 text-center text-[11px] uppercase tracking-widest text-slate-400">{{ business.name }}</p>
+        <CollectionThemeBanner v-if="isThemedCollection" :collection="collection" class="mt-6 rounded-2xl" />
+        <template v-else>
+          <h1 class="mt-6 text-center text-sm font-semibold uppercase tracking-[0.2em] text-slate-900">
+            {{ collection.name }}
+          </h1>
+          <p class="mt-1 text-center text-[11px] uppercase tracking-widest text-slate-400">{{ business.name }}</p>
+        </template>
 
         <nav v-if="categoryOptions.length > 1" class="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
           <button
@@ -133,6 +138,8 @@ const groups = computed(() => groupBySections(filtered.value, secciones.value))
 
     <!-- Templates Clásico / Lista: barra superior fija con búsqueda y categorías -->
     <template v-else>
+      <CollectionThemeBanner v-if="isThemedCollection" :collection="collection" />
+
       <div class="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur">
         <div class="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6">
           <router-link

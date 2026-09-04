@@ -1,5 +1,11 @@
 import { apiFetch } from './http'
 import { toNestedBusiness } from './negocio'
+import { getVisitorId } from '@/utils/visitor'
+
+function visitorHeaders() {
+  const visitorId = getVisitorId()
+  return visitorId ? { 'X-Visitor-Id': visitorId } : {}
+}
 
 export async function getPerfilPublico(slug) {
   const data = await apiFetch(`/api/v1/tienda/${encodeURIComponent(slug)}`)
@@ -7,7 +13,7 @@ export async function getPerfilPublico(slug) {
 }
 
 export function getCatalogoPublico(slug) {
-  return apiFetch(`/api/v1/tienda/${encodeURIComponent(slug)}/catalogo`)
+  return apiFetch(`/api/v1/tienda/${encodeURIComponent(slug)}/catalogo`, { headers: visitorHeaders() })
 }
 
 export function getDestacadosPublico(slug) {
@@ -23,7 +29,9 @@ export function getColeccionesPublico(slug) {
 }
 
 export async function getColeccionPublico(slug, coleccionSlug) {
-  const data = await apiFetch(`/api/v1/tienda/${encodeURIComponent(slug)}/colecciones/${encodeURIComponent(coleccionSlug)}`)
+  const data = await apiFetch(`/api/v1/tienda/${encodeURIComponent(slug)}/colecciones/${encodeURIComponent(coleccionSlug)}`, {
+    headers: visitorHeaders(),
+  })
   return {
     name: data.nombre,
     slug: data.slug,

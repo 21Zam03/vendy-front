@@ -57,7 +57,6 @@ onMounted(load)
 watch(() => [route.params.slug, route.params.id], load)
 
 const categoryName = computed(() => categorias.value.find((c) => c.id === product.value?.categoriaId)?.nombre)
-const soldOut = computed(() => (product.value?.stock ?? 0) === 0)
 
 const whatsappLink = computed(() =>
   product.value && business.value
@@ -135,10 +134,6 @@ async function shareProduct() {
               </span>
             </div>
             <p class="mt-4 text-sm leading-relaxed text-slate-500">{{ product.descripcion }}</p>
-
-            <p class="mt-4 text-xs font-medium" :class="soldOut ? 'text-rose-500' : 'text-emerald-600'">
-              {{ soldOut ? 'Agotado' : product.stock <= 5 ? `¡Solo quedan ${product.stock} unidades!` : 'Disponible' }}
-            </p>
 
             <div class="mt-6 flex flex-col gap-2.5">
               <a

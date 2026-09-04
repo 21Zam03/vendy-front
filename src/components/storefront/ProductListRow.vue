@@ -16,12 +16,6 @@ defineProps({
     <div class="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br text-2xl" :class="product.imagenUrl ? 'bg-slate-100' : product.color">
       <img v-if="product.imagenUrl" :src="product.imagenUrl" class="h-full w-full object-cover" alt="" />
       <template v-else>{{ product.emoji }}</template>
-      <span
-        v-if="product.stock === 0"
-        class="absolute inset-0 flex items-center justify-center rounded-lg bg-slate-900/50 text-[9px] font-semibold uppercase tracking-wide text-white"
-      >
-        Agotado
-      </span>
     </div>
 
     <div class="min-w-0 flex-1">

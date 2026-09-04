@@ -8,14 +8,11 @@ export function buildProductPost(product, businessName, url) {
   const discount = product.precioComparacion
     ? ` (antes ${formatCurrency(product.precioComparacion)})`
     : ''
-  const availability = product.stock === 0 ? '🔴 Agotado' : '✅ Disponible'
-
   const conEmojis = [
     `✨ ${product.nombre} ✨`,
     product.descripcion || '',
     '',
     `💰 ${price}${discount}`,
-    availability,
     '',
     `📲 Pídelo por WhatsApp: ${url}`,
   ]

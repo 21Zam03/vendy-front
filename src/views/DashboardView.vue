@@ -50,7 +50,7 @@ const stats = computed(() => [
     iconClass: 'bg-brand-50 text-brand-600',
   },
   {
-    label: 'Consultas por WhatsApp',
+    label: 'Intentos de consulta por WhatsApp',
     value: formatNumber(dashboard.value?.whatsappInquiries ?? 0),
     icon: MessageCircle,
     iconClass: 'bg-whatsapp-50 text-whatsapp-600',
@@ -163,13 +163,13 @@ const mostViewed = computed(() => [...products.value].sort((a, b) => b.vistas - 
 
         <BaseCard v-if="dashboard?.recentInquiries.length">
           <template #header>
-            <h2 class="text-base font-semibold text-slate-900">Consultas recientes</h2>
+            <h2 class="text-base font-semibold text-slate-900">Intentos de consulta recientes</h2>
           </template>
           <div class="flex flex-col divide-y divide-slate-100">
             <div v-for="i in dashboard.recentInquiries" :key="i.id" class="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
               <MessageCircle class="size-4 shrink-0 text-whatsapp-600" />
               <p class="flex-1 text-sm text-slate-600">
-                Alguien consultó por <span class="font-medium text-slate-900">{{ i.productoNombre }}</span>
+                Alguien intentó consultar por <span class="font-medium text-slate-900">{{ i.productoNombre }}</span>
               </p>
               <span class="text-xs text-slate-400">{{ timeAgo(i.creadoEn) }}</span>
             </div>
