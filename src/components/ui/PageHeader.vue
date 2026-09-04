@@ -11,7 +11,7 @@ defineProps({
       <h1 class="text-2xl font-semibold tracking-tight text-slate-900">{{ title }}</h1>
       <p v-if="description" class="mt-1 text-sm text-slate-500">{{ description }}</p>
     </div>
-    <div v-if="$slots.action" class="flex shrink-0 items-center gap-2">
+    <div v-if="$slots.action" class="flex flex-wrap items-center gap-2 sm:shrink-0">
       <slot name="action" />
     </div>
   </div>

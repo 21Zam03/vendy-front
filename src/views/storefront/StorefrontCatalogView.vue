@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { ArrowLeft, Search, LayoutGrid } from '@lucide/vue'
+import { ArrowLeft, Search, LayoutGrid, ChevronLeft, ChevronRight } from '@lucide/vue'
 import StorefrontLayout from '@/layouts/StorefrontLayout.vue'
 import ProductGridCard from '@/components/storefront/ProductGridCard.vue'
 import ProductEditorialCard from '@/components/storefront/ProductEditorialCard.vue'
@@ -62,7 +62,27 @@ const filtered = computed(() =>
     .filter((p) => p.nombre.toLowerCase().includes(search.value.toLowerCase())),
 )
 
-const groups = computed(() => groupBySections(filtered.value, secciones.value))
+// Paginación del catálogo público
+const pageSizeOptions = [8, 12, 24]
+const pageSize = ref(12)
+const currentPage = ref(1)
+
+const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize.value)))
+const paginated = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filtered.value.slice(start, start + pageSize.value)
+})
+
+watch([search, categoryFilter, pageSize], () => {
+  currentPage.value = 1
+})
+
+watch(totalPages, (pages) => {
+  if (currentPage.value > pages) currentPage.value = pages
+})
+
+// Paginación solo aplica al layout Clásico (grid); PRO y Lista muestran todo el catálogo.
+const groups = computed(() => groupBySections(layout.value === 'grid' ? paginated.value : filtered.value, secciones.value))
 </script>
 
 <template>
@@ -193,6 +213,36 @@ const groups = computed(() => groupBySections(filtered.value, secciones.value))
           title="No encontramos productos"
           description="Prueba con otra búsqueda o categoría."
         />
+
+        <div v-if="filtered.length && layout === 'grid'" class="mt-8 flex flex-col items-center gap-3 border-t border-slate-100 pt-6">
+          <div v-if="totalPages > 1" class="flex items-center gap-3">
+            <button
+              class="flex size-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent"
+              :disabled="currentPage === 1"
+              @click="currentPage--"
+            >
+              <ChevronLeft class="size-4" />
+            </button>
+            <span class="text-xs font-medium text-slate-600">Página {{ currentPage }} de {{ totalPages }}</span>
+            <button
+              class="flex size-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent"
+              :disabled="currentPage === totalPages"
+              @click="currentPage++"
+            >
+              <ChevronRight class="size-4" />
+            </button>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-slate-400">
+            <span>Mostrar</span>
+            <select
+              v-model.number="pageSize"
+              class="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs font-medium text-slate-600 focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-100"
+            >
+              <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size }}</option>
+            </select>
+            <span>por página · {{ filtered.length }} en total</span>
+          </div>
+        </div>
       </div>
     </template>
   </StorefrontLayout>

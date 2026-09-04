@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import {
   Search,
   Plus,
@@ -15,6 +15,8 @@ import {
   Rows3,
   ChevronUp,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   Loader2,
   ImageOff,
@@ -109,6 +111,25 @@ const filtered = computed(() =>
     .filter((p) => statusFilter.value === 'all' || (statusFilter.value === 'active' ? p.activo : !p.activo))
     .filter((p) => p.nombre.toLowerCase().includes(search.value.toLowerCase())),
 )
+
+// Paginación del catálogo
+const pageSizeOptions = [8, 12, 24]
+const pageSize = ref(12)
+const currentPage = ref(1)
+
+const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize.value)))
+const paginated = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filtered.value.slice(start, start + pageSize.value)
+})
+
+watch([search, categoryFilter, statusFilter, pageSize], () => {
+  currentPage.value = 1
+})
+
+watch(totalPages, (pages) => {
+  if (currentPage.value > pages) currentPage.value = pages
+})
 
 function openCreate() {
   editingProduct.value = null
@@ -445,12 +466,12 @@ function generateCatalogPost() {
 
         <div v-else-if="filtered.length" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           <div
-            v-for="p in filtered"
+            v-for="p in paginated"
             :key="p.id"
-            class="overflow-hidden rounded-xl border border-slate-200 transition-shadow hover:shadow-md"
+            class="rounded-xl border border-slate-200 transition-shadow hover:shadow-md"
             :class="!p.activo ? 'opacity-60' : ''"
           >
-            <div class="relative flex h-28 items-center justify-center bg-gradient-to-br text-4xl" :class="p.imagenUrl ? 'bg-slate-100' : p.color">
+            <div class="relative flex h-44 items-center justify-center overflow-hidden rounded-t-xl bg-gradient-to-br text-5xl sm:h-48" :class="p.imagenUrl ? 'bg-slate-100' : p.color">
               <img v-if="p.imagenUrl" :src="p.imagenUrl" class="h-full w-full object-cover" alt="" />
               <template v-else>{{ p.emoji }}</template>
               <span
@@ -523,6 +544,40 @@ function generateCatalogPost() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div
+          v-if="filtered.length"
+          class="mt-5 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div class="flex items-center gap-2 text-xs text-slate-500">
+            <span>Mostrar</span>
+            <select
+              v-model.number="pageSize"
+              class="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs font-medium text-slate-600 focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-100"
+            >
+              <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size }}</option>
+            </select>
+            <span>por página · {{ filtered.length }} en total</span>
+          </div>
+
+          <div v-if="totalPages > 1" class="flex items-center gap-2">
+            <button
+              class="flex size-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent"
+              :disabled="currentPage === 1"
+              @click="currentPage--"
+            >
+              <ChevronLeft class="size-4" />
+            </button>
+            <span class="text-xs font-medium text-slate-600">Página {{ currentPage }} de {{ totalPages }}</span>
+            <button
+              class="flex size-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent"
+              :disabled="currentPage === totalPages"
+              @click="currentPage++"
+            >
+              <ChevronRight class="size-4" />
+            </button>
           </div>
         </div>
 

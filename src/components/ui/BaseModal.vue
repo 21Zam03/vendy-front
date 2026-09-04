@@ -37,20 +37,22 @@ function close() {
           leave-to-class="opacity-0 scale-95"
         >
           <div
-            class="relative w-full rounded-2xl bg-white p-6 shadow-[var(--shadow-popover)]"
+            class="relative flex max-h-[calc(100vh-2rem)] w-full flex-col rounded-2xl bg-white shadow-[var(--shadow-popover)]"
             :class="sizes[size]"
           >
             <button
-              class="absolute right-4 top-4 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+              class="absolute right-4 top-4 z-10 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
               @click="close"
             >
               <X class="size-4" />
             </button>
-            <div v-if="title" class="mb-1 pr-8 text-lg font-semibold text-slate-900">
-              {{ title }}
+            <div class="overflow-y-auto p-6">
+              <div v-if="title" class="mb-1 pr-8 text-lg font-semibold text-slate-900">
+                {{ title }}
+              </div>
+              <p v-if="description" class="mb-4 text-sm text-slate-500">{{ description }}</p>
+              <slot />
             </div>
-            <p v-if="description" class="mb-4 text-sm text-slate-500">{{ description }}</p>
-            <slot />
           </div>
         </Transition>
       </div>
