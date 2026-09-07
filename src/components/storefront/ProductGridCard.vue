@@ -1,15 +1,23 @@
 <script setup>
 import { formatCurrency } from '@/utils/format'
+import EditableTileOverlay from './EditableTileOverlay.vue'
 
 defineProps({
   product: { type: Object, required: true },
   slug: { type: String, required: true },
+  editable: { type: Boolean, default: false },
+  uploading: { type: Boolean, default: false },
+  canMoveUp: { type: Boolean, default: false },
+  canMoveDown: { type: Boolean, default: false },
 })
+
+defineEmits(['move', 'upload'])
 </script>
 
 <template>
-  <router-link
-    :to="{ name: 'storefront-product', params: { slug, id: product.id } }"
+  <component
+    :is="editable ? 'div' : 'router-link'"
+    :to="editable ? undefined : { name: 'storefront-product', params: { slug, id: product.id } }"
     class="group flex flex-col overflow-hidden rounded-[var(--vendy-radius,1rem)] border border-slate-200 bg-white transition-shadow hover:shadow-md"
   >
     <div class="relative flex aspect-square items-center justify-center bg-gradient-to-br text-5xl" :class="product.imagenUrl ? 'bg-slate-100' : product.color">
@@ -21,6 +29,14 @@ defineProps({
       >
         -{{ Math.round((1 - product.precio / product.precioComparacion) * 100) }}%
       </span>
+      <EditableTileOverlay
+        v-if="editable"
+        :can-move-up="canMoveUp"
+        :can-move-down="canMoveDown"
+        :uploading="uploading"
+        @move="$emit('move', $event)"
+        @upload="$emit('upload', $event)"
+      />
     </div>
 
     <div class="flex flex-1 flex-col p-3.5">
@@ -32,5 +48,5 @@ defineProps({
         </span>
       </div>
     </div>
-  </router-link>
+  </component>
 </template>

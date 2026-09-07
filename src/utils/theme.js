@@ -7,10 +7,28 @@ const ACCENTS = {
   amber: { solid: 'bg-amber-500 hover:bg-amber-600', gradient: 'bg-gradient-to-br from-amber-400 to-amber-600', text: 'text-amber-600', soft: 'bg-amber-50 text-amber-700', blob: 'bg-amber-400' },
   sky: { solid: 'bg-sky-500 hover:bg-sky-600', gradient: 'bg-gradient-to-br from-sky-400 to-sky-600', text: 'text-sky-600', soft: 'bg-sky-50 text-sky-700', blob: 'bg-sky-400' },
   slate: { solid: 'bg-slate-900 hover:bg-slate-800', gradient: 'bg-gradient-to-br from-slate-700 to-slate-950', text: 'text-slate-900', soft: 'bg-slate-100 text-slate-700', blob: 'bg-slate-400' },
+  // El color real vive en --vendy-accent (una variable CSS, inyectada por
+  // accentCssVars según accentColorHex) — Tailwind no puede generar una clase para
+  // un color elegido en tiempo real, así que estas clases apuntan a la variable.
+  custom: {
+    solid: 'bg-[var(--vendy-accent)] hover:opacity-90 transition-opacity',
+    gradient: 'bg-[var(--vendy-accent)]',
+    text: 'text-[var(--vendy-accent)]',
+    soft: 'bg-[var(--vendy-accent)]/10 text-[var(--vendy-accent)]',
+    blob: 'bg-[var(--vendy-accent)]',
+  },
 }
 
 export function accentClasses(key) {
   return ACCENTS[key] || ACCENTS.brand
+}
+
+// Variables CSS a inyectar (vía :style) en la raíz de la página cuando el negocio usa
+// un color de acento personalizado, para que las clases bg-[var(--vendy-accent)] etc.
+// de ACCENTS.custom tengan un valor real. Sin esto, no hace falta nada: los colores
+// predefinidos ya son clases de Tailwind normales.
+export function accentCssVars(accentColor, accentColorHex) {
+  return accentColor === 'custom' && accentColorHex ? { '--vendy-accent': accentColorHex } : {}
 }
 
 // Cabeceras temáticas de temporada: cada una define su propio degradado (independiente
@@ -57,4 +75,13 @@ export function coverClasses(accentKey, cover) {
 
 export function radiusValue(key) {
   return radiusOptions.find((r) => r.key === key)?.value || radiusOptions[1].value
+}
+
+// El fondo del catálogo (y las páginas de producto, que se navegan desde ahí) es
+// independiente del fondo del perfil público — nunca hereda el "background" que el
+// negocio eligió en Apariencia para su perfil. Por ahora, blanco fijo para todos los
+// estilos de catálogo; el resto de la apariencia (acento, tipografía, bordes, plantilla)
+// se mantiene igual.
+export function catalogAppearance(appearance) {
+  return { ...appearance, background: 'white', backgroundImageUrl: '' }
 }

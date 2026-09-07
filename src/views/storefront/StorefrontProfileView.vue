@@ -6,6 +6,7 @@ import StorefrontLayout from '@/layouts/StorefrontLayout.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import FeaturedProductsCarousel from '@/components/storefront/FeaturedProductsCarousel.vue'
 import AmbientBlobField from '@/components/storefront/AmbientBlobField.vue'
+import SocialDock from '@/components/storefront/SocialDock.vue'
 import { getPerfilPublico, getDestacadosPublico, getColeccionesPublico, buildNegocioPreviewUrl } from '@/api/tienda'
 import { buildWhatsAppLink } from '@/utils/whatsapp'
 import { accentClasses, coverClasses, radiusValue } from '@/utils/theme'
@@ -145,54 +146,54 @@ async function shareProfile() {
       <AmbientBlobField :accent-color="business.appearance.accentColor" />
 
       <div class="sm:mx-auto sm:max-w-2xl sm:px-6">
-        <div class="relative">
-          <img
-            v-if="business.appearance.cover === 'imagen' && business.appearance.coverImageUrl"
-            :src="business.appearance.coverImageUrl"
-            class="h-48 w-full object-cover sm:h-60 sm:rounded-b-2xl"
-            alt=""
-          />
-          <div v-else class="h-48 w-full sm:h-60 sm:rounded-b-2xl" :class="cover" />
+          <div class="relative">
+            <img
+              v-if="business.appearance.cover === 'imagen' && business.appearance.coverImageUrl"
+              :src="business.appearance.coverImageUrl"
+              class="h-48 w-full object-cover sm:h-60 sm:rounded-b-2xl"
+              alt=""
+            />
+            <div v-else class="h-48 w-full sm:h-60 sm:rounded-b-2xl" :class="cover" />
 
-          <div class="absolute right-4 top-4 flex items-center gap-2">
-            <Transition
-              enter-active-class="transition duration-200 ease-out"
-              enter-from-class="opacity-0 translate-x-1"
-              leave-active-class="transition duration-150 ease-in"
-              leave-to-class="opacity-0"
-            >
-              <span
-                v-if="shared"
-                class="rounded-full border border-white/30 bg-slate-900/80 px-3 py-1.5 text-xs font-medium text-white shadow-lg backdrop-blur-md"
+            <div class="absolute right-4 top-4 flex items-center gap-2">
+              <Transition
+                enter-active-class="transition duration-200 ease-out"
+                enter-from-class="opacity-0 translate-x-1"
+                leave-active-class="transition duration-150 ease-in"
+                leave-to-class="opacity-0"
               >
-                ¡Enlace copiado!
-              </span>
-            </Transition>
+                <span
+                  v-if="shared"
+                  class="rounded-full border border-white/30 bg-slate-900/80 px-3 py-1.5 text-xs font-medium text-white shadow-lg backdrop-blur-md"
+                >
+                  ¡Enlace copiado!
+                </span>
+              </Transition>
 
-            <button
-              type="button"
-              class="group flex size-11 shrink-0 items-center justify-center rounded-full border border-white/30 bg-white/20 text-white shadow-lg backdrop-blur-md transition-all hover:scale-105 hover:bg-white/30 active:scale-95"
-              title="Compartir"
-              @click="shareProfile"
-            >
-              <Check v-if="shared" class="size-5" />
-              <Forward v-else class="size-[18px] transition-transform group-hover:scale-110" />
-            </button>
+              <button
+                type="button"
+                class="group flex size-11 shrink-0 items-center justify-center rounded-full border border-white/30 bg-white/20 text-white shadow-lg backdrop-blur-md transition-all hover:scale-105 hover:bg-white/30 active:scale-95"
+                title="Compartir"
+                @click="shareProfile"
+              >
+                <Check v-if="shared" class="size-5" />
+                <Forward v-else class="size-[18px] transition-transform group-hover:scale-110" />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="relative mx-auto -mt-14 flex max-w-sm flex-col items-center px-4 text-center sm:px-6">
-        <span
-          class="flex size-24 items-center justify-center overflow-hidden border-4 border-white bg-slate-900 text-2xl font-semibold text-white shadow-lg"
-          :style="{ borderRadius: radius }"
-        >
-          <img v-if="business.logoUrl" :src="business.logoUrl" class="h-full w-full object-cover" alt="" />
-          <template v-else>{{ business.logoInitials }}</template>
-        </span>
+        <div class="relative mx-auto -mt-14 flex max-w-sm flex-col items-center px-4 text-center sm:px-6">
+          <span
+            class="flex size-24 items-center justify-center overflow-hidden border-4 border-white bg-slate-900 text-2xl font-semibold text-white shadow-lg"
+            :style="{ borderRadius: radius }"
+          >
+            <img v-if="business.logoUrl" :src="business.logoUrl" class="h-full w-full object-cover" alt="" />
+            <template v-else>{{ business.logoInitials }}</template>
+          </span>
 
-        <h1 class="mt-4 text-xl font-semibold tracking-tight text-slate-900">{{ business.name }}</h1>
-      </div>
+          <h1 class="mt-4 text-xl font-semibold tracking-tight text-slate-900">{{ business.name }}</h1>
+        </div>
 
       <div class="mx-auto mt-4 w-full max-w-sm px-4 sm:px-6" :class="{ 'pb-10': !showInfoContent }">
         <div v-if="hasPayments" class="mb-4 flex justify-center gap-1.5">
@@ -220,19 +221,7 @@ async function shareProfile() {
             {{ business.location }}
           </p>
 
-          <div v-if="socialLinks.length" class="mt-3 flex items-center gap-2">
-            <a
-              v-for="s in socialLinks"
-              :key="s.label"
-              :href="s.href"
-              target="_blank"
-              rel="noopener"
-              class="flex size-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-700"
-              :title="s.label"
-            >
-              <component :is="s.icon" class="size-4" />
-            </a>
-          </div>
+          <SocialDock v-if="socialLinks.length" :items="socialLinks" class="mt-3" />
         </div>
 
         <div v-else class="flex w-full flex-col gap-2.5">

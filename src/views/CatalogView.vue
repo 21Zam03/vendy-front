@@ -12,14 +12,12 @@ import {
   AlertTriangle,
   Star,
   Megaphone,
-  Rows3,
-  ChevronUp,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Eye,
   Loader2,
   ImageOff,
+  Images,
 } from '@lucide/vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
@@ -35,8 +33,14 @@ import GeneratePostModal from '@/components/catalog/GeneratePostModal.vue'
 import { productColorOptions } from '@/data/mock'
 import { useBusiness } from '@/composables/useBusiness'
 import { listCategorias, createCategoria, deleteCategoria } from '@/api/categorias'
-import { listSecciones, createSeccion, deleteSeccion, reorderSecciones } from '@/api/secciones'
-import { listProductos, createProducto, updateProducto, deleteProducto, uploadProductoImagen } from '@/api/productos'
+import { listSecciones } from '@/api/secciones'
+import {
+  listProductos,
+  createProducto,
+  updateProducto,
+  deleteProducto,
+  uploadProductoImagen,
+} from '@/api/productos'
 import { buildProductoPreviewUrl, buildNegocioPreviewUrl } from '@/api/tienda'
 import { ApiError } from '@/api/http'
 import { formatCurrency } from '@/utils/format'
@@ -56,7 +60,11 @@ async function loadAll() {
   loading.value = true
   noNegocio.value = false
   try {
-    const [cats, prods, secs] = await Promise.all([listCategorias(), listProductos(), listSecciones()])
+    const [cats, prods, secs] = await Promise.all([
+      listCategorias(),
+      listProductos(),
+      listSecciones(),
+    ])
     categories.value = cats
     products.value = prods
     sections.value = secs
@@ -79,7 +87,6 @@ const statusFilter = ref('all')
 
 const showProductModal = ref(false)
 const showCategoryModal = ref(false)
-const showSectionModal = ref(false)
 const showDeleteConfirm = ref(false)
 const editingProduct = ref(null)
 const productToDelete = ref(null)
@@ -111,6 +118,22 @@ const filtered = computed(() =>
     .filter((p) => statusFilter.value === 'all' || (statusFilter.value === 'active' ? p.activo : !p.activo))
     .filter((p) => p.nombre.toLowerCase().includes(search.value.toLowerCase())),
 )
+
+// Límite del plan Gratis (ver ProductoService.LIMITE_PRODUCTOS_PLAN_GRATIS en el
+// backend, que es quien de verdad lo hace cumplir) — acá solo evitamos abrir el modal
+// para mostrar un aviso más claro que el 403 genérico.
+const PRODUCT_LIMIT_GRATIS = 50
+const atProductLimit = computed(() => business.plan === 'gratis' && products.value.length >= PRODUCT_LIMIT_GRATIS)
+
+function handleOpenCreate() {
+  if (atProductLimit.value) {
+    toastError('Alcanzaste el límite de tu plan', {
+      description: `El plan Vendy Gratis permite hasta ${PRODUCT_LIMIT_GRATIS} productos. Mejora tu plan para agregar más.`,
+    })
+    return
+  }
+  openCreate()
+}
 
 // Paginación del catálogo
 const pageSizeOptions = [8, 12, 24]
@@ -311,49 +334,6 @@ async function removeCategory(category) {
   }
 }
 
-// Secciones
-const newSection = ref({ nombre: '' })
-
-async function addSection() {
-  if (!newSection.value.nombre) return
-  try {
-    const created = await createSeccion({ nombre: newSection.value.nombre })
-    sections.value.push(created)
-    newSection.value = { nombre: '' }
-  } catch (err) {
-    toastError('No se pudo crear la sección', { description: err.message })
-  }
-}
-
-async function removeSection(section) {
-  const inUse = products.value.some((p) => p.seccionId === section.id)
-  if (inUse) {
-    toastError('No se puede eliminar', { description: 'Esta sección tiene productos asignados' })
-    return
-  }
-  try {
-    await deleteSeccion(section.id)
-    sections.value = sections.value.filter((s) => s.id !== section.id)
-  } catch (err) {
-    toastError('No se pudo eliminar la sección', { description: err.message })
-  }
-}
-
-async function moveSection(index, direction) {
-  const target = index + direction
-  if (target < 0 || target >= sections.value.length) return
-
-  const reordered = [...sections.value]
-  ;[reordered[index], reordered[target]] = [reordered[target], reordered[index]]
-  sections.value = reordered
-
-  try {
-    sections.value = await reorderSecciones(reordered.map((s) => s.id))
-  } catch (err) {
-    toastError('No se pudo reordenar', { description: err.message })
-  }
-}
-
 // Generar publicación para redes sociales
 const showPostModal = ref(false)
 const postVariants = ref([])
@@ -387,10 +367,12 @@ function generateCatalogPost() {
           <Tags class="size-4" />
           Categorías
         </BaseButton>
-        <BaseButton variant="outline" @click="showSectionModal = true">
-          <Rows3 class="size-4" />
-          Secciones
-        </BaseButton>
+        <router-link :to="{ name: 'catalog-editor' }">
+          <BaseButton variant="outline">
+            <Images class="size-4" />
+            Editar catálogo
+          </BaseButton>
+        </router-link>
         <a v-if="business.slug" :href="`/tienda/${business.slug}/catalogo`" target="_blank" rel="noopener">
           <BaseButton variant="outline">
             <Eye class="size-4" />
@@ -401,12 +383,17 @@ function generateCatalogPost() {
           <Megaphone class="size-4" />
           Generar publicación
         </BaseButton>
-        <BaseButton @click="openCreate">
+        <BaseButton @click="handleOpenCreate">
           <Plus class="size-4" />
           Nuevo producto
         </BaseButton>
       </template>
     </PageHeader>
+
+    <p v-if="business.plan === 'gratis'" class="-mt-2 text-xs text-slate-400">
+      {{ products.length }}/{{ PRODUCT_LIMIT_GRATIS }} productos usados en tu plan Vendy Gratis
+      <router-link :to="{ name: 'memberships' }" class="font-medium text-brand-600 hover:text-brand-700">Mejorar plan</router-link>
+    </p>
 
     <EmptyState
       v-if="!loading && noNegocio"
@@ -588,7 +575,7 @@ function generateCatalogPost() {
           description="Prueba con otra búsqueda o crea tu primer producto."
         >
           <template #action>
-            <BaseButton @click="openCreate">
+            <BaseButton @click="handleOpenCreate">
               <Plus class="size-4" />
               Nuevo producto
             </BaseButton>
@@ -772,55 +759,6 @@ function generateCatalogPost() {
         </div>
         <div class="flex-1">
           <BaseInput v-model="newCategory.nombre" label="Nueva categoría" placeholder="Ej. Bolsos" />
-        </div>
-        <BaseButton type="submit" size="md">
-          <Plus class="size-4" />
-        </BaseButton>
-      </form>
-    </BaseModal>
-
-    <!-- Modal secciones -->
-    <BaseModal
-      v-model="showSectionModal"
-      title="Secciones"
-      description="Agrupa productos en bloques con nombre libre, ej. 'Más vendidos' o 'Navidad'. Se muestran en este orden en el catálogo público."
-    >
-      <div class="flex flex-col gap-2">
-        <div
-          v-for="(s, index) in sections"
-          :key="s.id"
-          class="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2"
-        >
-          <span class="text-sm text-slate-700">{{ s.nombre }}</span>
-          <div class="flex items-center gap-1">
-            <BaseBadge size="sm" variant="slate">
-              {{ products.filter((p) => p.seccionId === s.id).length }} productos
-            </BaseBadge>
-            <button
-              class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 disabled:opacity-30"
-              :disabled="index === 0"
-              @click="moveSection(index, -1)"
-            >
-              <ChevronUp class="size-4" />
-            </button>
-            <button
-              class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 disabled:opacity-30"
-              :disabled="index === sections.length - 1"
-              @click="moveSection(index, 1)"
-            >
-              <ChevronDown class="size-4" />
-            </button>
-            <button class="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-500" @click="removeSection(s)">
-              <Trash2 class="size-4" />
-            </button>
-          </div>
-        </div>
-        <EmptyState v-if="!sections.length" :icon="Rows3" title="Sin secciones" description="El catálogo se muestra sin agrupar." />
-      </div>
-
-      <form class="mt-4 flex items-end gap-2 border-t border-slate-100 pt-4" @submit.prevent="addSection">
-        <div class="flex-1">
-          <BaseInput v-model="newSection.nombre" label="Nueva sección" placeholder="Ej. Más vendidos" />
         </div>
         <BaseButton type="submit" size="md">
           <Plus class="size-4" />

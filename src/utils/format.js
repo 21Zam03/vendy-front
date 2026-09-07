@@ -18,13 +18,23 @@ export function formatCompactNumber(value) {
   )
 }
 
+// Una fecha "sola" (sin hora, ej. "2026-09-04", como manda un LocalDate del backend) JS
+// la interpreta como medianoche UTC — al formatearla en una zona horaria detrás de UTC
+// (Perú, UTC-5) cae al día anterior. Forzarla a medianoche LOCAL evita ese salto; a un
+// datetime completo (con hora) no le hace falta este truco, ya se interpreta bien.
+function parseAsLocalDate(value) {
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return new Date(`${value}T00:00:00`)
+  }
+  return value instanceof Date ? value : new Date(value)
+}
+
 export function formatDate(value, opts = {}) {
-  const date = value instanceof Date ? value : new Date(value)
   return new Intl.DateTimeFormat('es-ES', {
     day: 'numeric',
     month: 'short',
     ...opts,
-  }).format(date)
+  }).format(parseAsLocalDate(value))
 }
 
 export function timeAgo(value) {

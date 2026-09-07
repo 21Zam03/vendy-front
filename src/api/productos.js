@@ -16,6 +16,11 @@ export function deleteProducto(id) {
   return apiFetch(`/api/v1/productos/${id}`, { method: 'DELETE' })
 }
 
+// Reordena los productos dentro de una sección (seccionId null = sin sección).
+export function reorderProductos(seccionId, idsEnOrden) {
+  return apiFetch('/api/v1/productos/orden', { method: 'PUT', body: { seccionId, idsEnOrden } })
+}
+
 // Sube la imagen tal cual (el backend no la comprime) y devuelve { url } para incluirla
 // en el payload de createProducto/updateProducto.
 export function uploadProductoImagen(file) {

@@ -11,6 +11,7 @@ export function toNestedBusiness(flat) {
     description: flat.descripcion ?? '',
     whatsapp: flat.whatsapp ?? '',
     location: flat.ubicacion ?? '',
+    schedule: flat.horario ?? '',
     logoInitials: flat.logoInitials ?? '',
     logoUrl: flat.logoUrl ?? '',
     social: {
@@ -26,11 +27,19 @@ export function toNestedBusiness(flat) {
       cover: flat.cover ?? 'gradient',
       coverImageUrl: flat.coverImageUrl ?? '',
       catalogLayout: flat.catalogLayout ?? 'grid',
+      template: flat.plantilla ?? null,
+      accentColorHex: flat.accentColorHex ?? '#5a32f4',
+      backgroundImageUrl: flat.backgroundImageUrl ?? '',
     },
     paymentMethods: (flat.metodosPago ?? []).map((m) => ({ key: m.tipo, value: m.detalle ?? '' })),
     // Solo viene poblado en la respuesta pública de la tienda (NegocioPublicoResponse);
     // en el panel de admin los enlaces se gestionan aparte, vía /api/v1/enlaces.
     links: flat.enlaces ?? [],
+    // Se asigna a mano en la base de datos (ver Plan.java) — de solo lectura acá, nunca
+    // se manda de vuelta en toFlatBusiness.
+    plan: (flat.plan ?? 'GRATIS').toLowerCase(),
+    planActivoDesde: flat.planActivoDesde ?? null,
+    planVenceEl: flat.planVenceEl ?? null,
   }
 }
 
@@ -41,6 +50,7 @@ export function toFlatBusiness(nested) {
     descripcion: nested.description,
     whatsapp: nested.whatsapp,
     ubicacion: nested.location,
+    horario: nested.schedule,
     logoInitials: nested.logoInitials,
     logoUrl: nested.logoUrl || null,
     instagram: nested.social.instagram,
@@ -53,6 +63,9 @@ export function toFlatBusiness(nested) {
     cover: nested.appearance.cover,
     coverImageUrl: nested.appearance.coverImageUrl || null,
     catalogLayout: nested.appearance.catalogLayout,
+    plantilla: nested.appearance.template || null,
+    accentColorHex: nested.appearance.accentColor === 'custom' ? nested.appearance.accentColorHex : null,
+    backgroundImageUrl: nested.appearance.background === 'imagen' ? nested.appearance.backgroundImageUrl || null : null,
     metodosPago: nested.paymentMethods.map((m) => ({ tipo: m.key, detalle: m.value || null })),
   }
 }
@@ -79,4 +92,12 @@ export function uploadNegocioCoverImage(file) {
   const formData = new FormData()
   formData.append('file', file)
   return apiFetch('/api/v1/negocio/portada', { method: 'POST', body: formData })
+}
+
+// Sube la foto de fondo tal cual (el backend no la comprime) y devuelve { url } para
+// incluirla en el siguiente guardado del negocio.
+export function uploadNegocioBackgroundImage(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return apiFetch('/api/v1/negocio/fondo', { method: 'POST', body: formData })
 }

@@ -9,6 +9,8 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { ApiError } from '@/api/http'
+import { googleLoginUrl } from '@/api/auth'
+import GoogleIcon from '@/components/icons/GoogleIcon.vue'
 
 const username = ref('')
 const password = ref('')
@@ -21,6 +23,12 @@ const router = useRouter()
 const route = useRoute()
 const { login } = useAuth()
 const { success } = useToast()
+
+// Si venimos de un intento fallido de "Continuar con Google" (ver
+// GoogleAuthenticationFailureHandler en el backend), mostramos ese mensaje acá mismo.
+if (route.query.error) {
+  errors.value.form = String(route.query.error)
+}
 
 function validate() {
   errors.value = {}
@@ -106,6 +114,20 @@ async function handleSubmit() {
         Iniciar sesión
       </BaseButton>
     </form>
+
+    <div class="mt-6 flex items-center gap-3 text-xs font-medium uppercase tracking-wide text-slate-400">
+      <span class="h-px flex-1 bg-slate-200" />
+      o
+      <span class="h-px flex-1 bg-slate-200" />
+    </div>
+
+    <a
+      :href="googleLoginUrl()"
+      class="mt-6 flex h-11 items-center justify-center gap-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+    >
+      <GoogleIcon class="size-4.5" />
+      Continuar con Google
+    </a>
 
     <p class="mt-8 text-center text-sm text-slate-500">
       ¿No tienes una cuenta?

@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { backgroundOptions, fontOptions } from '@/data/mock'
-import { radiusValue } from '@/utils/theme'
+import { radiusValue, accentCssVars } from '@/utils/theme'
 
 const props = defineProps({
   appearance: {
@@ -17,14 +17,22 @@ const fontClass = computed(
   () => fontOptions.find((f) => f.key === props.appearance.font)?.class || 'font-sans',
 )
 const radius = computed(() => radiusValue(props.appearance.radius))
+const cssVars = computed(() => ({
+  '--vendy-radius': radius.value,
+  ...accentCssVars(props.appearance.accentColor, props.appearance.accentColorHex),
+}))
 </script>
 
 <template>
-  <div
-    class="flex min-h-screen flex-col"
-    :class="[backgroundClass, fontClass]"
-    :style="{ '--vendy-radius': radius }"
-  >
+  <div class="flex min-h-screen flex-col" :class="[backgroundClass, fontClass]" :style="cssVars">
+    <!-- Foto de fondo con opacidad baja: es decorativa, no debe competir con el contenido. -->
+    <img
+      v-if="appearance.background === 'imagen' && appearance.backgroundImageUrl"
+      :src="appearance.backgroundImageUrl"
+      class="pointer-events-none fixed inset-0 -z-10 h-full w-full object-cover opacity-10"
+      alt=""
+    />
+
     <main class="flex-1">
       <slot />
     </main>

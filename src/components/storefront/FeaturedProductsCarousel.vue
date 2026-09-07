@@ -7,6 +7,7 @@ import ProductGridCard from './ProductGridCard.vue'
 const props = defineProps({
   products: { type: Array, required: true },
   slug: { type: String, required: true },
+  title: { type: String, default: 'Destacados' },
 })
 
 // Con 3 o menos, se muestran todos en fila fija. Con más, se vuelve un carrusel tipo
@@ -99,7 +100,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="mx-auto w-full max-w-2xl px-4 sm:px-6">
-    <p class="mb-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-400">Destacados</p>
+    <p class="mb-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-400">{{ title }}</p>
 
     <div v-if="!isSlider" class="grid grid-cols-3 gap-3">
       <ProductGridCard v-for="p in products" :key="p.id" :product="p" :slug="slug" />

@@ -24,6 +24,18 @@ export function getSeccionesPublico(slug) {
   return apiFetch(`/api/v1/tienda/${encodeURIComponent(slug)}/secciones`)
 }
 
+export function getPestanasPublico(slug) {
+  return apiFetch(`/api/v1/tienda/${encodeURIComponent(slug)}/pestanas`)
+}
+
+export function getBannersPublico(slug) {
+  return apiFetch(`/api/v1/tienda/${encodeURIComponent(slug)}/banners`)
+}
+
+export function getTextosPublico(slug) {
+  return apiFetch(`/api/v1/tienda/${encodeURIComponent(slug)}/textos`)
+}
+
 export function getColeccionesPublico(slug) {
   return apiFetch(`/api/v1/tienda/${encodeURIComponent(slug)}/colecciones`)
 }

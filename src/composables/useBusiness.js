@@ -10,12 +10,27 @@ function emptyBusiness() {
     description: '',
     whatsapp: '',
     location: '',
+    schedule: '',
     logoInitials: '',
     logoUrl: '',
     social: { instagram: '', tiktok: '', facebook: '' },
-    appearance: { accentColor: 'brand', background: 'white', font: 'sans', radius: 'soft', cover: 'gradient', coverImageUrl: '', catalogLayout: 'grid' },
+    appearance: {
+      accentColor: 'brand',
+      accentColorHex: '#5a32f4',
+      background: 'white',
+      backgroundImageUrl: '',
+      font: 'sans',
+      radius: 'soft',
+      cover: 'gradient',
+      coverImageUrl: '',
+      catalogLayout: 'grid',
+      template: null,
+    },
     paymentMethods: [],
     links: [],
+    plan: 'gratis',
+    planActivoDesde: null,
+    planVenceEl: null,
   }
 }
 

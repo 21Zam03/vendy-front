@@ -11,12 +11,12 @@ ensureInitialized()
 </script>
 
 <template>
-  <div class="flex min-h-screen bg-slate-50">
+  <div class="flex h-screen overflow-hidden bg-slate-50">
     <Sidebar :open="sidebarOpen" @close="sidebarOpen = false" />
 
-    <div class="flex min-w-0 flex-1 flex-col">
+    <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
       <Header @toggle-sidebar="sidebarOpen = true" />
-      <main class="flex flex-1 flex-col px-4 py-6 sm:px-6 lg:px-8">
+      <main class="flex flex-1 flex-col overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
         <slot />
       </main>
     </div>

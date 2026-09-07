@@ -18,6 +18,7 @@ import { buildInquiryMessage, buildWhatsAppLink } from '@/utils/whatsapp'
 import { setPageMeta } from '@/utils/head'
 import { shareOrCopy } from '@/utils/share'
 import { useToast } from '@/composables/useToast'
+import { catalogAppearance } from '@/utils/theme'
 
 const { error: toastError } = useToast()
 
@@ -88,7 +89,7 @@ async function shareProduct() {
 </script>
 
 <template>
-  <StorefrontLayout :appearance="business?.appearance">
+  <StorefrontLayout :appearance="business ? catalogAppearance(business.appearance) : undefined">
     <div v-if="loading" class="flex min-h-[60vh] items-center justify-center text-sm text-slate-400">
       Cargando…
     </div>

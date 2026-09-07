@@ -1,7 +1,7 @@
 <script setup>
-import { computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { BarChart3, LayoutGrid, Store, LogOut, ExternalLink, X, Layers } from '@lucide/vue'
+import { computed, ref, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { BarChart3, LayoutGrid, Store, LogOut, ExternalLink, X, Layers, Images, ChevronDown, Sparkles } from '@lucide/vue'
 import BaseAvatar from '@/components/ui/BaseAvatar.vue'
 import BaseDropdown from '@/components/ui/BaseDropdown.vue'
 import { useAuth } from '@/composables/useAuth'
@@ -16,15 +16,36 @@ defineProps({
 const emit = defineEmits(['close'])
 
 const router = useRouter()
+const route = useRoute()
 const { state, logout } = useAuth()
 const { info } = useToast()
 
+const businessSections = [
+  { key: 'profile', label: 'Perfil' },
+  { key: 'template', label: 'Estilo del catalogo' },
+  { key: 'contact', label: 'Info del negocio' },
+  { key: 'payment', label: 'Métodos de pago' },
+  { key: 'links', label: 'Enlaces' },
+  { key: 'appearance', label: 'Estilo de pagina' },
+  { key: 'account', label: 'Cuenta' },
+]
+
 const nav = computed(() => [
-  { to: { name: 'catalog' }, label: 'Mi catálogo', icon: LayoutGrid },
-  { to: { name: 'collections' }, label: 'Colecciones', icon: Layers },
-  { to: { name: 'business-profile' }, label: 'Mi negocio', icon: Store },
-  { to: { name: 'dashboard' }, label: 'Estadísticas', icon: BarChart3 },
+  { type: 'link', to: { name: 'catalog' }, label: 'Mi catálogo', icon: LayoutGrid },
+  { type: 'link', to: { name: 'collections' }, label: 'Colecciones', icon: Layers },
+  { type: 'link', to: { name: 'archivos' }, label: 'Archivos guardados', icon: Images },
+  { type: 'group', label: 'Mi negocio', icon: Store, children: businessSections },
+  { type: 'link', to: { name: 'dashboard' }, label: 'Estadísticas', icon: BarChart3 },
+  { type: 'link', to: { name: 'memberships' }, label: 'Membresías', icon: Sparkles },
 ])
+
+const isBusinessRoute = computed(() => route.name === 'business-profile')
+const activeSection = computed(() => route.query.section || 'profile')
+const businessMenuOpen = ref(isBusinessRoute.value)
+
+watch(isBusinessRoute, (isBusiness) => {
+  if (isBusiness) businessMenuOpen.value = true
+})
 
 async function handleLogout() {
   await logout()
@@ -58,16 +79,54 @@ async function handleLogout() {
     </div>
 
     <nav class="scrollbar-thin flex-1 overflow-y-auto px-3 py-2">
-      <router-link
-        v-for="item in nav"
-        :key="item.label"
-        :to="item.to"
-        class="group mb-0.5 flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 [&.router-link-active]:bg-brand-50 [&.router-link-active]:text-brand-700"
-        @click="emit('close')"
-      >
-        <component :is="item.icon" class="size-[18px] shrink-0 text-slate-400 group-hover:text-slate-600 group-[&.router-link-active]:text-brand-600" />
-        <span class="flex-1 truncate">{{ item.label }}</span>
-      </router-link>
+      <template v-for="item in nav" :key="item.label">
+        <router-link
+          v-if="item.type === 'link'"
+          :to="item.to"
+          class="group mb-0.5 flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 [&.router-link-active]:bg-brand-50 [&.router-link-active]:text-brand-700"
+          @click="emit('close')"
+        >
+          <component :is="item.icon" class="size-[18px] shrink-0 text-slate-400 group-hover:text-slate-600 group-[&.router-link-active]:text-brand-600" />
+          <span class="flex-1 truncate">{{ item.label }}</span>
+        </router-link>
+
+        <div v-else class="mb-0.5">
+          <button
+            type="button"
+            class="group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
+            :class="isBusinessRoute ? 'bg-brand-50 text-brand-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+            @click="businessMenuOpen = !businessMenuOpen"
+          >
+            <component
+              :is="item.icon"
+              class="size-[18px] shrink-0"
+              :class="isBusinessRoute ? 'text-brand-600' : 'text-slate-400 group-hover:text-slate-600'"
+            />
+            <span class="flex-1 truncate text-left">{{ item.label }}</span>
+            <ChevronDown
+              class="size-4 shrink-0 text-slate-400 transition-transform"
+              :class="businessMenuOpen ? 'rotate-180' : ''"
+            />
+          </button>
+
+          <div v-show="businessMenuOpen" class="ml-[1.15rem] mt-0.5 flex flex-col gap-0.5 border-l border-slate-200 pl-3">
+            <router-link
+              v-for="s in item.children"
+              :key="s.key"
+              :to="{ name: 'business-profile', query: { section: s.key } }"
+              class="rounded-lg px-2.5 py-1.5 text-sm transition-colors"
+              :class="
+                isBusinessRoute && activeSection === s.key
+                  ? 'bg-brand-50 font-medium text-brand-700'
+                  : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
+              "
+              @click="emit('close')"
+            >
+              {{ s.label }}
+            </router-link>
+          </div>
+        </div>
+      </template>
 
       <a
         v-if="business.slug"
@@ -82,9 +141,9 @@ async function handleLogout() {
     </nav>
 
     <div class="border-t border-slate-100 p-3">
-      <BaseDropdown align="left">
+      <BaseDropdown align="left" full-width>
         <template #trigger>
-          <button class="flex w-full items-center gap-2.5 rounded-lg p-2 text-left transition-colors hover:bg-slate-100">
+          <button class="flex w-full min-w-0 items-center gap-2.5 rounded-lg p-2 text-left transition-colors hover:bg-slate-100">
             <BaseAvatar :name="state.user?.name" size="sm" />
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm font-medium text-slate-900">{{ state.user?.name }}</p>

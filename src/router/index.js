@@ -1,5 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
+import { useBusiness } from '@/composables/useBusiness'
+import { useToast } from '@/composables/useToast'
+import { planAlcanza } from '@/data/plans'
 
 const routes = [
   {
@@ -52,13 +55,19 @@ const routes = [
     path: '/dashboard',
     name: 'dashboard',
     component: () => import('@/views/DashboardView.vue'),
-    meta: { requiresAuth: true, title: 'Estadísticas' },
+    meta: { requiresAuth: true, title: 'Estadísticas', requiresPlan: 'go' },
   },
   {
     path: '/catalogo',
     name: 'catalog',
     component: () => import('@/views/CatalogView.vue'),
     meta: { requiresAuth: true, title: 'Mi catálogo' },
+  },
+  {
+    path: '/catalogo/editar',
+    name: 'catalog-editor',
+    component: () => import('@/views/CatalogEditorView.vue'),
+    meta: { requiresAuth: true, title: 'Editar catálogo' },
   },
   {
     path: '/mi-negocio',
@@ -70,7 +79,19 @@ const routes = [
     path: '/colecciones',
     name: 'collections',
     component: () => import('@/views/CollectionsView.vue'),
-    meta: { requiresAuth: true, title: 'Colecciones' },
+    meta: { requiresAuth: true, title: 'Colecciones', requiresPlan: 'go' },
+  },
+  {
+    path: '/archivos',
+    name: 'archivos',
+    component: () => import('@/views/ArchivosView.vue'),
+    meta: { requiresAuth: true, title: 'Archivos guardados' },
+  },
+  {
+    path: '/membresias',
+    name: 'memberships',
+    component: () => import('@/views/MembershipsView.vue'),
+    meta: { requiresAuth: true, title: 'Membresías' },
   },
   {
     path: '/:pathMatch(.*)*',
@@ -95,6 +116,29 @@ router.beforeEach(async (to) => {
   }
   if (to.meta.guestOnly && state.isAuthenticated) {
     return { name: 'catalog' }
+  }
+
+  // Sin negocio todavía (cuenta nueva por Google, o cualquier cuenta a la que
+  // todavía no se le armó el negocio) no puede navegar a ningún otro módulo hasta
+  // completar los datos mínimos en "Mi negocio" (ver BusinessProfileView.vue).
+  if (to.meta.requiresAuth && state.isAuthenticated && to.name !== 'business-profile') {
+    const { state: businessState, business, ensureInitialized: ensureBusinessInitialized } = useBusiness()
+    await ensureBusinessInitialized()
+    if (!businessState.exists) {
+      useToast().info('Completa los datos de tu negocio', {
+        description: 'Antes de seguir, necesitamos algunos datos básicos de tu negocio.',
+      })
+      return { name: 'business-profile' }
+    }
+
+    // Módulos que un plan no incluye (ver src/data/plans.js): Colecciones y Estadísticas
+    // requieren plan Go o superior — el plan Gratis no puede ni siquiera navegar ahí.
+    if (to.meta.requiresPlan && !planAlcanza(business.plan, to.meta.requiresPlan)) {
+      useToast().info('Esta función no está en tu plan actual', {
+        description: 'Mejora tu plan para acceder a este módulo.',
+      })
+      return { name: 'memberships' }
+    }
   }
 })
 

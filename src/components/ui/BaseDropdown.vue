@@ -4,6 +4,12 @@ import { useClickOutside } from '@/composables/useClickOutside'
 
 defineProps({
   align: { type: String, default: 'right' }, // left | right
+  // "inline-block" (default) se achica al contenido del trigger — sirve para triggers
+  // chicos (íconos). Cuando el trigger necesita ocupar todo el ancho del contenedor (ej.
+  // el usuario abajo del sidebar, que trunca un nombre largo), hace falta "block w-full":
+  // con inline-block, un hijo con w-full queda circular y termina sin truncar, empujando
+  // el ancho real del contenido hacia afuera.
+  fullWidth: { type: Boolean, default: false },
 })
 
 const open = ref(false)
@@ -23,8 +29,8 @@ defineExpose({ close })
 </script>
 
 <template>
-  <div ref="root" class="relative inline-block">
-    <div @click="toggle">
+  <div ref="root" class="relative" :class="fullWidth ? 'block w-full' : 'inline-block'">
+    <div :class="{ 'w-full': fullWidth }" @click="toggle">
       <slot name="trigger" :open="open" />
     </div>
     <Transition
