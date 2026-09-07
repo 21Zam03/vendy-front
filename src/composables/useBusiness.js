@@ -31,6 +31,7 @@ function emptyBusiness() {
     plan: 'gratis',
     planActivoDesde: null,
     planVenceEl: null,
+    rubroPreferido: null,
   }
 }
 

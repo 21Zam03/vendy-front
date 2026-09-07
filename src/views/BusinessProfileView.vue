@@ -240,6 +240,7 @@ async function save() {
   try {
     await saveNegocio()
     success('Cambios guardados', { description: 'Tu página pública se actualizó correctamente' })
+    return true
   } catch (err) {
     if (err instanceof ApiError && err.status === 400 && err.data) {
       errors.value = err.data
@@ -250,6 +251,7 @@ async function save() {
     } else {
       toastError('No se pudieron guardar los cambios', { description: err.message })
     }
+    return false
   } finally {
     saving.value = false
   }
@@ -292,12 +294,15 @@ async function saveWelcome() {
   business.name = welcomeName.value.trim()
   business.whatsapp = welcomeWhatsapp.value.trim()
   if (!business.slug) business.slug = slugify(business.name)
-  if (welcomeRubro.value) {
-    await applyTemplate(welcomeRubro.value)
-  }
+  // Guarda el rubro como dato para recomendarle esa plantilla más adelante — a
+  // diferencia de "appearance.template" (la plantilla real, bloqueada por plan), esto
+  // nunca lo rechaza el backend sin importar el plan actual.
+  business.rubroPreferido = welcomeRubro.value
 
-  await save()
-  if (!Object.keys(errors.value).length) {
+  // Se usa el resultado real de save() en vez de mirar "errors" (que solo se llena en
+  // errores 400) para saber si de verdad guardó.
+  const guardadoOk = await save()
+  if (guardadoOk) {
     showWelcomeModal.value = false
   }
 }
@@ -416,6 +421,7 @@ function notifyAccountUnavailable() {
           <TemplatePicker
             :selected="business.appearance.template"
             :locked="business.plan === 'gratis'"
+            :recommended="business.rubroPreferido"
             @pick="applyTemplate"
             @locked="
               toastError('Tu plan actual no incluye plantillas', {
@@ -867,6 +873,10 @@ function notifyAccountUnavailable() {
               {{ t.label }}
             </button>
           </div>
+          <p class="mt-2 text-xs text-slate-400">
+            Tu catálogo arranca en el estilo general — con esto solo te vamos a recomendar la
+            plantilla que más te conviene cuando mejores de plan.
+          </p>
         </div>
       </div>
 

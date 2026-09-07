@@ -9,6 +9,10 @@ const props = defineProps({
   // aplicarlas. El backend igual las rechaza si se intenta de otra forma (ver
   // NegocioService.guardar), esto es solo la señal visual.
   locked: { type: Boolean, default: false },
+  // Rubro que el negocio dijo tener al completar el modal de bienvenida (ver
+  // Negocio.rubroPreferido) — solo resalta la tarjeta correspondiente con "Recomendado",
+  // no afecta qué se puede elegir.
+  recommended: { type: String, default: null },
 })
 
 const emit = defineEmits(['pick', 'locked'])
@@ -87,7 +91,15 @@ function pickTemplate(key) {
 
       <div class="flex flex-1 flex-col gap-2 p-4">
         <div>
-          <p class="text-sm font-semibold text-slate-900">{{ t.label }}</p>
+          <div class="flex items-center gap-1.5">
+            <p class="text-sm font-semibold text-slate-900">{{ t.label }}</p>
+            <span
+              v-if="recommended === t.key"
+              class="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700"
+            >
+              Recomendado
+            </span>
+          </div>
           <p class="mt-0.5 text-xs leading-relaxed text-slate-400">{{ t.description }}</p>
         </div>
 

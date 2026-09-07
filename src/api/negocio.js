@@ -40,6 +40,9 @@ export function toNestedBusiness(flat) {
     plan: (flat.plan ?? 'GRATIS').toLowerCase(),
     planActivoDesde: flat.planActivoDesde ?? null,
     planVenceEl: flat.planVenceEl ?? null,
+    // Rubro que el negocio dijo tener (ej. en el modal de bienvenida) — nunca lo bloquea
+    // el plan, es solo para poder recomendarle esa plantilla más adelante.
+    rubroPreferido: flat.rubroPreferido ?? null,
   }
 }
 
@@ -67,6 +70,7 @@ export function toFlatBusiness(nested) {
     accentColorHex: nested.appearance.accentColor === 'custom' ? nested.appearance.accentColorHex : null,
     backgroundImageUrl: nested.appearance.background === 'imagen' ? nested.appearance.backgroundImageUrl || null : null,
     metodosPago: nested.paymentMethods.map((m) => ({ tipo: m.key, detalle: m.value || null })),
+    rubroPreferido: nested.rubroPreferido || null,
   }
 }
 
