@@ -1,13 +1,12 @@
 <script setup>
 import { computed, onUnmounted, ref, watch } from 'vue'
-import { Search, LayoutGrid, ChevronLeft, ChevronRight, ImagePlus, ChevronUp, ChevronDown, Camera, Loader2, ArrowLeftRight } from '@lucide/vue'
+import { Search, LayoutGrid, ChevronLeft, ChevronRight, ImagePlus, Camera, Loader2, ArrowLeftRight } from '@lucide/vue'
 import EditableTileOverlay from './EditableTileOverlay.vue'
 import EditableSectionTitle from './EditableSectionTitle.vue'
 import TopbarMarquee from './TopbarMarquee.vue'
 import GallerySection from './GallerySection.vue'
 import ScheduleLocationSection from './ScheduleLocationSection.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
-import { accentClasses } from '@/utils/theme'
 import { formatCurrency } from '@/utils/format'
 import { groupBySections } from '@/utils/sections'
 import { getTemplate } from '@/data/templates'
@@ -82,9 +81,6 @@ function pickBanner(slot) {
   emit('pick-banner', slot)
 }
 
-const accent = computed(() => accentClasses(props.business.appearance.accentColor))
-const layout = computed(() => props.business.appearance.catalogLayout ?? 'grid')
-
 // La plantilla del negocio (elegida en Mi negocio → Estilo de negocio) define la
 // estructura del CATÁLOGO — nunca la del perfil público, que se mantiene única para
 // todos los negocios. Cada plantilla organiza su catálogo en las Secciones reales que
@@ -92,21 +88,31 @@ const layout = computed(() => props.business.appearance.catalogLayout ?? 'grid')
 // su orden y el orden de los productos dentro de cada una.
 const template = computed(() => getTemplate(props.business.appearance.template))
 const galleryProducts = computed(() => props.productos.filter((p) => p.imagenUrl).slice(0, 9))
-const isPro = computed(() => layout.value === 'pro')
 
 const isModa = computed(() => template.value?.key === 'moda')
-const isComida = computed(() => template.value?.key === 'comida')
-const isBelleza = computed(() => template.value?.key === 'belleza')
 const isAccesorios = computed(() => template.value?.key === 'accesorios')
-const isCalzado = computed(() => template.value?.key === 'calzado')
-const isBarberia = computed(() => template.value?.key === 'barberia')
 
-// Con el estilo "Catálogo general" (sin plantilla elegida), el catálogo es una sola
-// grilla con todos los productos: cualquier otra pestaña que haya quedado de una
-// plantilla anterior (ej. un "Inicio" de Moda) deja de mostrarse, aunque sigue existiendo
-// en la base de datos por si el negocio vuelve a elegir esa plantilla más adelante — nunca
-// se borra nada, solo se deja de listar acá.
-const visiblePestanas = computed(() => (template.value ? props.pestanas : props.pestanas.filter((p) => p.esGeneral)))
+// Modelo fijo: cada negocio tiene como máximo 2 pestañas, "Inicio" y "General" (ver
+// PestanaService.asegurarSinHuerfanas en el backend, que las garantiza apenas hay una
+// plantilla elegida y absorbe cualquier pestaña vieja que haya quedado de antes de esta
+// regla — nombres viejos, "Varones"/"Mujeres" de una Moda anterior, etc. — pasando sus
+// secciones a "General" antes de eliminarlas, así que este filtro es solo una defensa
+// extra por si el negocio no pasó todavía por ese autocurado).
+//
+// Además, en el catálogo público (editable=false) se ocultan las que el negocio desactivó
+// a mano (ver el interruptor "Activa" en el editor) — en el editor admin (editable=true)
+// siguen apareciendo igual, marcadas como desactivadas, para poder seguir editándolas y
+// reactivarlas cuando quiera.
+//
+// Siempre en este orden — "Inicio" primero, "General" después — sin importar el campo
+// "orden" real de cada una: "General" se crea al dar de alta el negocio (orden 0) y
+// "Inicio" recién al elegir una plantilla (un orden mayor), así que por creación quedaría
+// al revés para cualquier negocio.
+const visiblePestanas = computed(() =>
+  props.pestanas
+    .filter((p) => (p.esGeneral || p.esHome) && (props.editable || p.activa !== false))
+    .sort((a, b) => Number(!!b.esHome) - Number(!!a.esHome)),
+)
 
 // Pestaña activa: primer nivel de la estructura del catálogo, por encima de las
 // Secciones. Si el negocio solo tiene una (o ninguna), no tiene sentido mostrar el
@@ -135,14 +141,19 @@ const productsForActiveTab = computed(() => {
   return filtered.value.filter((p) => p.seccionId == null || visibleSeccionIds.value.has(p.seccionId))
 })
 
-// Pestaña "Home" de Moda: la plantilla Moda crea 3 pestañas por defecto (Home, Varones,
-// Mujeres) — solo la de Home imita la portada de una tienda de ropa real (carrusel de
-// banners + mosaico de categorías con foto + fila de estilos por categoría); Varones/Mujeres
-// se quedan con la grilla lookbook simple de siempre.
+// Pestaña "Inicio": la única pestaña propia de cada plantilla (la otra, "General", es
+// siempre el mismo catálogo neutro — ver isGeneralTab). Moda y Accesorios ya tienen su
+// estructura definida (portada tipo tienda real: carrusel + mosaico de categorías + fila de
+// estilos); el resto de plantillas todavía no la tiene, así que su "Inicio" muestra un
+// aviso de "por definir" (ver isPendingHomeTab).
 const activePestana = computed(() => visiblePestanas.value.find((p) => p.id === activePestanaId.value) ?? null)
-// "esHome" queda guardado en la pestaña misma (no depende de su nombre), así que el
-// negocio puede renombrarla (ej. "Home" -> "Inicio") sin perder la estructura especial.
-const isHomeTab = computed(() => isModa.value && !!activePestana.value?.esHome)
+// Accesorios reusa la misma portada que Moda (carrusel + mosaico + estilos + shop the
+// look), pero sin las secciones 5-7 (spotlight, estilos duplicada, piezas clave) — ver
+// los "v-if=isModa" alrededor de esas tres en el template.
+const isHomeTab = computed(() => (isModa.value || isAccesorios.value) && !!activePestana.value?.esHome)
+// "Inicio" de una plantilla sin estructura definida todavía (Comida, Belleza, Calzado,
+// Barbería) — mismo criterio que isHomeTab pero para el resto de plantillas.
+const isPendingHomeTab = computed(() => !!activePestana.value?.esHome && !isHomeTab.value)
 
 const search = ref('')
 const categoryFilter = ref(props.initialCategoryFilter)
@@ -274,35 +285,6 @@ onUnmounted(() => clearInterval(heroAutoplay))
 const sectionGroups = computed(() =>
   groupBySections(productsForActiveTab.value, visibleSecciones.value, { includeEmpty: props.editable }),
 )
-
-// Rellena una lista de productos con tarjetas vacías "sube una foto" hasta un mínimo, para
-// que cada sección se vea completa aunque el negocio recién esté empezando (Moda, Accesorios,
-// Calzado, y el resto de la grilla de Belleza).
-function padTiles(products, minTiles) {
-  const real = products.map((p) => ({ type: 'product', product: p }))
-  const placeholders = Math.max(0, minTiles - real.length)
-  return [...real, ...Array.from({ length: placeholders }, () => ({ type: 'placeholder' }))]
-}
-function isLargeTile(index) {
-  return index % 4 === 0
-}
-
-// Elige el producto/servicio "estrella" de una sección (Belleza): el que está en oferta,
-// o si no hay, el primero con foto, o el primero que sea.
-function pickHero(products) {
-  const withImages = products.filter((p) => p.imagenUrl)
-  return withImages.find((p) => p.precioComparacion) ?? withImages[0] ?? products[0] ?? null
-}
-
-// Banners grandes intercalados entre secciones (Comida, como las fotos de campaña de
-// Zara): se arman con fotos reales de productos en oferta o destacados; si el negocio
-// todavía no tiene suficientes fotos, el espacio queda como guía vacía para que suba una.
-const comidaBanners = computed(() => {
-  const withImages = props.productos.filter((p) => p.imagenUrl)
-  const promos = withImages.filter((p) => p.precioComparacion)
-  const pool = promos.length ? promos : withImages
-  return pool.slice(0, 2)
-})
 </script>
 
 <template>
@@ -332,6 +314,7 @@ const comidaBanners = computed(() => {
           @click="activePestanaId = p.id"
         >
           {{ p.nombre }}
+          <span v-if="editable && p.activa === false" class="ml-1 normal-case tracking-normal text-rose-500">(desactivada)</span>
         </button>
       </div>
 
@@ -345,6 +328,7 @@ const comidaBanners = computed(() => {
           @click="activePestanaId = p.id"
         >
           {{ p.nombre }}
+          <span v-if="editable && p.activa === false" class="ml-1 text-rose-500">(desactivada)</span>
         </button>
       </div>
     </div>
@@ -431,15 +415,13 @@ const comidaBanners = computed(() => {
   </template>
 
   <!-- Template PRO: tipografía minimalista, fotos grandes — comparte el navbar de arriba. -->
-  <template v-else-if="isPro">
+  <!-- Pestaña "Inicio" de Moda/Accesorios: portada tipo home de tienda de ropa (carrusel +
+       mosaico de categorías + fila de estilos + shop the look, ver isModa más abajo para
+       las secciones 5-7 exclusivas de Moda). -->
+  <template v-else-if="isHomeTab">
     <div class="mx-auto max-w-[1600px] px-6 pb-16 sm:px-10 lg:px-16">
-      <!-- Con plantilla: cada Sección se muestra con el estilo de tarjeta del rubro. Este
-           bloque solo se alcanza con isPro, que a su vez requiere una plantilla elegida
-           (isGeneralTab ya se llevó todos los casos "sin plantilla" antes de llegar acá). -->
       <template v-if="sectionGroups.length">
-        <!-- Moda · Home: portada tipo home de tienda de ropa (carrusel + mosaico de
-             categorías + grilla densa de la primera sección). -->
-        <div v-if="isHomeTab" class="flex flex-col gap-16">
+        <div class="flex flex-col gap-16">
           <!-- Carrusel de portada: banner grande con flechas + puntos si hay más de una foto.
                La foto de cada diapositiva es SOLO la que el negocio eligió para ese slot.
                En el editor, el botón "Reordenar" abre un modal con todas las diapositivas
@@ -669,6 +651,9 @@ const comidaBanners = computed(() => {
             </div>
           </div>
 
+          <!-- Secciones 5-7: exclusivas de Moda — Accesorios reusa esta misma portada pero
+               solo hasta la cuarta sección (shop the look). -->
+          <template v-if="isModa">
           <!-- Quinta sección (producto en detalle): dos fotos grandes lado a lado. Siempre
                editable, tenga o no el negocio productos destacados/en oferta con foto
                todavía. Título opcional a elección del negocio. -->
@@ -824,231 +809,7 @@ const comidaBanners = computed(() => {
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- Resto de plantillas (y las pestañas Varones/Mujeres de Moda): sin cambios. -->
-        <div v-else class="mt-10 flex flex-col gap-16">
-        <div v-for="g in sectionGroups" :key="g.id ?? 'sin-seccion'">
-          <h2 v-if="g.nombre" class="mb-6 text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">
-            {{ g.nombre }}
-          </h2>
-
-          <!-- Moda: grilla estilo lookbook con tamaños alternados + espacios "sube más fotos". -->
-          <div v-if="isModa" class="grid grid-flow-row-dense grid-cols-2 gap-x-6 gap-y-14 md:grid-cols-3 xl:grid-cols-4">
-            <template v-for="(tile, i) in padTiles(g.productos, 8)" :key="i">
-              <component
-                :is="editable ? 'div' : 'router-link'"
-                v-if="tile.type === 'product'"
-                :to="editable ? undefined : { name: 'storefront-product', params: { slug, id: tile.product.id } }"
-                class="group flex flex-col"
-                :class="isLargeTile(i) ? 'col-span-2' : ''"
-              >
-                <div
-                  class="relative flex aspect-[3/4] items-center justify-center overflow-hidden bg-gradient-to-br text-7xl transition-opacity group-hover:opacity-90 sm:text-8xl xl:text-9xl"
-                  :class="tile.product.imagenUrl ? 'bg-slate-100' : tile.product.color"
-                >
-                  <img v-if="tile.product.imagenUrl" :src="tile.product.imagenUrl" class="h-full w-full object-cover" alt="" />
-                  <template v-else>{{ tile.product.emoji }}</template>
-                  <EditableTileOverlay
-                    v-if="editable"
-                    :can-move-up="i > 0"
-                    :can-move-down="i < g.productos.length - 1"
-                    :uploading="isUploading(tile.product.id)"
-                    @move="emitMove(g.id, tile.product.id, $event)"
-                    @upload="emitUpload(tile.product, $event)"
-                  />
-                </div>
-                <div class="mt-3 flex flex-col gap-0.5">
-                  <p class="line-clamp-1 text-xs font-medium uppercase tracking-wide text-slate-800">{{ tile.product.nombre }}</p>
-                  <div class="flex items-baseline gap-2">
-                    <span class="text-xs text-slate-600">{{ formatCurrency(tile.product.precio) }}</span>
-                    <span v-if="tile.product.precioComparacion" class="text-xs text-slate-400 line-through">
-                      {{ formatCurrency(tile.product.precioComparacion) }}
-                    </span>
-                  </div>
-                </div>
-              </component>
-
-              <div
-                v-else
-                class="flex aspect-[3/4] flex-col items-center justify-center gap-2 rounded-sm border border-dashed border-slate-300 bg-slate-50/60 px-4 text-center"
-                :class="isLargeTile(i) ? 'col-span-2' : ''"
-              >
-                <ImagePlus class="size-6 text-slate-300" />
-                <p class="text-[11px] leading-snug text-slate-400">Sube más fotos para completar tu catálogo</p>
-              </div>
-            </template>
-          </div>
-
-          <!-- Belleza: un producto/servicio "estrella" grande arriba + grilla suave debajo. -->
-          <template v-else-if="isBelleza">
-            <component
-              :is="editable ? 'div' : 'router-link'"
-              v-if="pickHero(g.productos)"
-              :to="editable ? undefined : { name: 'storefront-product', params: { slug, id: pickHero(g.productos).id } }"
-              class="group block"
-            >
-              <div
-                class="relative flex aspect-[16/9] items-center justify-center overflow-hidden rounded-[1.75rem] bg-gradient-to-br text-8xl sm:aspect-[21/9]"
-                :class="pickHero(g.productos).imagenUrl ? 'bg-slate-100' : pickHero(g.productos).color"
-              >
-                <img
-                  v-if="pickHero(g.productos).imagenUrl"
-                  :src="pickHero(g.productos).imagenUrl"
-                  class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  alt=""
-                />
-                <template v-else>{{ pickHero(g.productos).emoji }}</template>
-                <EditableTileOverlay
-                  v-if="editable"
-                  :show-move="false"
-                  :uploading="isUploading(pickHero(g.productos).id)"
-                  @upload="emitUpload(pickHero(g.productos), $event)"
-                />
-              </div>
-              <div class="mt-4 flex items-center justify-between">
-                <p class="text-lg font-medium text-slate-900">{{ pickHero(g.productos).nombre }}</p>
-                <span class="text-sm text-slate-500">{{ formatCurrency(pickHero(g.productos).precio) }}</span>
-              </div>
-            </component>
-
-            <div class="mt-6 grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3">
-              <template
-                v-for="(tile, i) in padTiles(g.productos.filter((p) => p.id !== pickHero(g.productos)?.id), 6)"
-                :key="i"
-              >
-                <component
-                  :is="editable ? 'div' : 'router-link'"
-                  v-if="tile.type === 'product'"
-                  :to="editable ? undefined : { name: 'storefront-product', params: { slug, id: tile.product.id } }"
-                  class="group flex flex-col"
-                >
-                  <div
-                    class="relative flex aspect-[4/5] items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br text-6xl transition-opacity group-hover:opacity-90"
-                    :class="tile.product.imagenUrl ? 'bg-slate-100' : tile.product.color"
-                  >
-                    <img v-if="tile.product.imagenUrl" :src="tile.product.imagenUrl" class="h-full w-full object-cover" alt="" />
-                    <template v-else>{{ tile.product.emoji }}</template>
-                    <EditableTileOverlay
-                      v-if="editable"
-                      :can-move-up="g.productos.findIndex((p) => p.id === tile.product.id) > 0"
-                      :can-move-down="g.productos.findIndex((p) => p.id === tile.product.id) < g.productos.length - 1"
-                      :uploading="isUploading(tile.product.id)"
-                      @move="emitMove(g.id, tile.product.id, $event)"
-                      @upload="emitUpload(tile.product, $event)"
-                    />
-                  </div>
-                  <div class="mt-2.5 flex items-center justify-between gap-2">
-                    <p class="line-clamp-1 text-sm text-slate-800">{{ tile.product.nombre }}</p>
-                    <span class="shrink-0 text-xs text-slate-500">{{ formatCurrency(tile.product.precio) }}</span>
-                  </div>
-                </component>
-
-                <div
-                  v-else
-                  class="flex aspect-[4/5] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 px-4 text-center"
-                >
-                  <ImagePlus class="size-5 text-slate-300" />
-                  <p class="text-[11px] leading-snug text-slate-400">Sube fotos de tus trabajos o productos</p>
-                </div>
-              </template>
-            </div>
           </template>
-
-          <!-- Accesorios: grilla uniforme minimalista, producto centrado y completo (sin recortar). -->
-          <div v-else-if="isAccesorios" class="grid grid-cols-2 gap-x-8 gap-y-14 sm:grid-cols-3 xl:grid-cols-4">
-            <template v-for="(tile, i) in padTiles(g.productos, 8)" :key="i">
-              <component
-                :is="editable ? 'div' : 'router-link'"
-                v-if="tile.type === 'product'"
-                :to="editable ? undefined : { name: 'storefront-product', params: { slug, id: tile.product.id } }"
-                class="group flex flex-col"
-              >
-                <div class="relative flex aspect-square items-center justify-center overflow-hidden bg-slate-50 p-6 text-6xl">
-                  <img
-                    v-if="tile.product.imagenUrl"
-                    :src="tile.product.imagenUrl"
-                    class="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
-                    alt=""
-                  />
-                  <template v-else>{{ tile.product.emoji }}</template>
-                  <EditableTileOverlay
-                    v-if="editable"
-                    :can-move-up="i > 0"
-                    :can-move-down="i < g.productos.length - 1"
-                    :uploading="isUploading(tile.product.id)"
-                    @move="emitMove(g.id, tile.product.id, $event)"
-                    @upload="emitUpload(tile.product, $event)"
-                  />
-                </div>
-                <div class="mt-3 flex flex-col items-center gap-0.5 text-center">
-                  <p class="line-clamp-1 text-xs font-medium uppercase tracking-wider text-slate-800">{{ tile.product.nombre }}</p>
-                  <span class="text-xs text-slate-500">{{ formatCurrency(tile.product.precio) }}</span>
-                </div>
-              </component>
-
-              <div
-                v-else
-                class="flex aspect-square flex-col items-center justify-center gap-2 border border-dashed border-slate-300 bg-slate-50/60 px-4 text-center"
-              >
-                <ImagePlus class="size-5 text-slate-300" />
-                <p class="text-[11px] leading-snug text-slate-400">Sube una foto de cerca de tu producto</p>
-              </div>
-            </template>
-          </div>
-
-          <!-- Calzado: fotos horizontales completas + precio como etiqueta sobre la foto. -->
-          <div v-else-if="isCalzado" class="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3">
-            <template v-for="(tile, i) in padTiles(g.productos, 8)" :key="i">
-              <component
-                :is="editable ? 'div' : 'router-link'"
-                v-if="tile.type === 'product'"
-                :to="editable ? undefined : { name: 'storefront-product', params: { slug, id: tile.product.id } }"
-                class="group flex flex-col"
-              >
-                <div class="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl bg-slate-50 p-5 text-6xl">
-                  <img
-                    v-if="tile.product.imagenUrl"
-                    :src="tile.product.imagenUrl"
-                    class="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
-                    alt=""
-                  />
-                  <template v-else>{{ tile.product.emoji }}</template>
-
-                  <span
-                    v-if="tile.product.precioComparacion"
-                    class="absolute right-2.5 top-2.5 rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-semibold text-white"
-                  >
-                    -{{ Math.round((1 - tile.product.precio / tile.product.precioComparacion) * 100) }}%
-                  </span>
-                  <span
-                    class="absolute bottom-2.5 left-2.5 rounded-lg px-2.5 py-1 text-xs font-bold text-white shadow"
-                    :class="accent.solid"
-                  >
-                    {{ formatCurrency(tile.product.precio) }}
-                  </span>
-                  <EditableTileOverlay
-                    v-if="editable"
-                    :can-move-up="i > 0"
-                    :can-move-down="i < g.productos.length - 1"
-                    :uploading="isUploading(tile.product.id)"
-                    @move="emitMove(g.id, tile.product.id, $event)"
-                    @upload="emitUpload(tile.product, $event)"
-                  />
-                </div>
-                <p class="mt-3 line-clamp-1 text-sm font-semibold text-slate-900">{{ tile.product.nombre }}</p>
-              </component>
-
-              <div
-                v-else
-                class="flex aspect-[4/3] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 px-4 text-center"
-              >
-                <ImagePlus class="size-5 text-slate-300" />
-                <p class="text-[11px] leading-snug text-slate-400">Sube una foto de tu modelo</p>
-              </div>
-            </template>
-          </div>
-        </div>
         </div>
       </template>
       <EmptyState
@@ -1061,186 +822,20 @@ const comidaBanners = computed(() => {
     </div>
   </template>
 
-  <!-- Templates Clásico / Lista: comparten el navbar de arriba. -->
-  <template v-else>
-    <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-      <div class="relative mb-6">
-        <Search class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-        <input
-          v-model="search"
-          type="text"
-          placeholder="Buscar productos…"
-          class="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-100"
-        />
-      </div>
-
-      <!-- Barbería: lista de precios agrupada por Sección, como el cartel de una barbería. -->
-      <div v-if="isBarberia" class="flex flex-col gap-8">
-        <div v-for="g in sectionGroups" :key="g.id ?? 'sin-seccion'">
-          <h2 class="mb-2 text-xs font-bold uppercase tracking-[0.15em] text-slate-500">{{ g.nombre || 'Servicios' }}</h2>
-          <div class="flex flex-col divide-y divide-slate-200 border-y border-slate-200">
-            <component
-              :is="editable ? 'div' : 'router-link'"
-              v-for="(p, pIndex) in g.productos"
-              :key="p.id"
-              :to="editable ? undefined : { name: 'storefront-product', params: { slug, id: p.id } }"
-              class="flex items-center gap-3 py-3.5 transition-colors hover:bg-slate-50"
-            >
-              <div
-                class="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br text-xl"
-                :class="p.imagenUrl ? 'bg-slate-100' : p.color"
-              >
-                <img v-if="p.imagenUrl" :src="p.imagenUrl" class="h-full w-full object-cover" alt="" />
-                <template v-else>{{ p.emoji }}</template>
-                <label v-if="editable" class="absolute inset-0 z-10 flex cursor-pointer items-center justify-center bg-slate-900/0 text-white opacity-0 transition-all hover:bg-slate-900/60 hover:opacity-100" @click.stop>
-                  <Camera class="size-4" />
-                  <input type="file" accept="image/*" class="hidden" @change="handleFileInput(p, $event)" />
-                </label>
-                <div v-if="isUploading(p.id)" class="absolute inset-0 z-20 flex items-center justify-center bg-slate-900/60">
-                  <Loader2 class="size-4 animate-spin text-white" />
-                </div>
-              </div>
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-semibold text-slate-900">{{ p.nombre }}</p>
-                <p v-if="p.descripcion" class="truncate text-xs text-slate-400">{{ p.descripcion }}</p>
-              </div>
-              <span class="shrink-0 text-base font-bold text-slate-900">{{ formatCurrency(p.precio) }}</span>
-              <div v-if="editable" class="flex shrink-0 items-center gap-0.5" @click.stop.prevent>
-                <button
-                  type="button"
-                  class="flex size-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-30"
-                  :disabled="pIndex === 0"
-                  @click="emitMove(g.id, p.id, -1)"
-                >
-                  <ChevronUp class="size-4" />
-                </button>
-                <button
-                  type="button"
-                  class="flex size-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-30"
-                  :disabled="pIndex === g.productos.length - 1"
-                  @click="emitMove(g.id, p.id, 1)"
-                >
-                  <ChevronDown class="size-4" />
-                </button>
-              </div>
-            </component>
-            <p v-if="editable && !g.productos.length" class="py-4 text-center text-xs text-slate-400">
-              Sección vacía — asigna productos a "{{ g.nombre }}" desde el editor de secciones.
-            </p>
-          </div>
-        </div>
-        <EmptyState
-          v-if="!sectionGroups.length"
-          :icon="LayoutGrid"
-          title="No encontramos servicios"
-          description="Prueba con otra búsqueda."
-        />
-      </div>
-
-      <!-- Comida/Repostería: agrupado por Sección, tipo menú, con precio destacado en la foto
-           y banners grandes intercalados (como las fotos de campaña de un catálogo de moda),
-           armados con productos reales en oferta/destacados. -->
-      <div v-else-if="isComida" class="flex flex-col gap-10">
-        <div
-          class="relative flex h-40 items-center justify-center overflow-hidden rounded-2xl sm:h-56"
-          :class="comidaBanners[0] ? '' : 'border border-dashed border-slate-300 bg-slate-50/60'"
-        >
-          <template v-if="comidaBanners[0]">
-            <img :src="comidaBanners[0].imagenUrl" class="h-full w-full object-cover" alt="" />
-            <div class="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/10 to-transparent" />
-            <div class="absolute inset-x-0 bottom-0 p-4">
-              <p class="text-[11px] font-semibold uppercase tracking-wide text-white/80">
-                {{ comidaBanners[0].precioComparacion ? 'Oferta especial' : 'Especial de la casa' }}
-              </p>
-              <p class="text-lg font-bold text-white">{{ comidaBanners[0].nombre }}</p>
-            </div>
-          </template>
-          <div v-else class="flex flex-col items-center gap-2 px-4 text-center">
-            <ImagePlus class="size-6 text-slate-300" />
-            <p class="text-xs text-slate-400">Sube una foto grande para promocionar tu producto estrella</p>
-          </div>
-        </div>
-
-        <template v-for="(g, gi) in sectionGroups" :key="g.id ?? 'sin-seccion'">
-          <div>
-            <h2 class="mb-4 text-base font-bold text-slate-900">{{ g.nombre || 'Catálogo' }}</h2>
-            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              <component
-                :is="editable ? 'div' : 'router-link'"
-                v-for="(p, pIndex) in g.productos"
-                :key="p.id"
-                :to="editable ? undefined : { name: 'storefront-product', params: { slug, id: p.id } }"
-                class="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white transition-shadow hover:shadow-md"
-              >
-                <div
-                  class="relative flex aspect-square items-center justify-center overflow-hidden bg-gradient-to-br text-5xl"
-                  :class="p.imagenUrl ? 'bg-slate-100' : p.color"
-                >
-                  <img v-if="p.imagenUrl" :src="p.imagenUrl" class="h-full w-full object-cover" alt="" />
-                  <template v-else>{{ p.emoji }}</template>
-                  <span
-                    v-if="p.precioComparacion"
-                    class="absolute left-2 top-2 rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-semibold text-white"
-                  >
-                    -{{ Math.round((1 - p.precio / p.precioComparacion) * 100) }}%
-                  </span>
-                  <EditableTileOverlay
-                    v-if="editable"
-                    :can-move-up="pIndex > 0"
-                    :can-move-down="pIndex < g.productos.length - 1"
-                    :uploading="isUploading(p.id)"
-                    @move="emitMove(g.id, p.id, $event)"
-                    @upload="emitUpload(p, $event)"
-                  />
-                </div>
-                <div class="flex flex-1 flex-col gap-1.5 p-3">
-                  <p class="line-clamp-2 text-sm font-medium text-slate-900">{{ p.nombre }}</p>
-                  <span
-                    class="mt-auto inline-flex w-fit items-center rounded-full px-2.5 py-1 text-xs font-bold text-white"
-                    :class="accent.solid"
-                  >
-                    {{ formatCurrency(p.precio) }}
-                  </span>
-                </div>
-              </component>
-            </div>
-            <p v-if="editable && !g.productos.length" class="py-4 text-center text-xs text-slate-400">
-              Sección vacía — asigna productos a "{{ g.nombre }}" desde el editor de secciones.
-            </p>
-          </div>
-
-          <div
-            v-if="gi === 0 && sectionGroups.length > 1"
-            class="relative flex h-40 items-center justify-center overflow-hidden rounded-2xl sm:h-56"
-            :class="comidaBanners[1] ? '' : 'border border-dashed border-slate-300 bg-slate-50/60'"
-          >
-            <template v-if="comidaBanners[1]">
-              <img :src="comidaBanners[1].imagenUrl" class="h-full w-full object-cover" alt="" />
-              <div class="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/10 to-transparent" />
-              <div class="absolute inset-x-0 bottom-0 p-4">
-                <p class="text-[11px] font-semibold uppercase tracking-wide text-white/80">
-                  {{ comidaBanners[1].precioComparacion ? 'Oferta especial' : 'Especial de la casa' }}
-                </p>
-                <p class="text-lg font-bold text-white">{{ comidaBanners[1].nombre }}</p>
-              </div>
-            </template>
-            <div v-else class="flex flex-col items-center gap-2 px-4 text-center">
-              <ImagePlus class="size-6 text-slate-300" />
-              <p class="text-xs text-slate-400">Sube otra foto grande para destacar más productos</p>
-            </div>
-          </div>
-        </template>
-
-        <EmptyState
-          v-if="!sectionGroups.length"
-          :icon="LayoutGrid"
-          title="No encontramos productos"
-          description="Prueba con otra búsqueda o categoría."
-        />
-      </div>
-
+  <!-- Pestaña "Inicio" de una plantilla sin estructura definida todavía (Comida, Belleza,
+       Calzado, Barbería): aviso de "por definir" en vez de un diseño propio — el catálogo
+       completo del negocio sigue disponible en la pestaña "General". -->
+  <template v-else-if="isPendingHomeTab">
+    <div class="mx-auto flex max-w-2xl flex-col items-center gap-3 px-6 py-24 text-center">
+      <LayoutGrid class="size-8 text-slate-300" />
+      <p class="text-lg font-semibold text-slate-900">Estructura por definir próximamente</p>
+      <p class="text-sm text-slate-500">
+        Estamos preparando el diseño de "Inicio" para {{ template?.label }}. Mientras tanto, tu
+        catálogo completo ya está disponible en la pestaña "General".
+      </p>
     </div>
   </template>
+
 
   <GallerySection v-if="template?.showGallery" :products="galleryProducts" :slug="slug" class="mt-10" />
 

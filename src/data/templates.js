@@ -15,10 +15,17 @@
 // rubro: el negocio puede renombrarlas, agregar más pestañas/secciones, borrarlas o
 // reordenar sus productos después, como cualquier otra sección.
 //
-// "tabPresets" (opcional) reemplaza a "sectionPresets" cuando la plantilla necesita varias
-// pestañas de entrada en vez de una sola — cada entrada { nombre, sectionPresets } crea su
-// propia Pestaña con sus propias Secciones. Si una plantilla no define tabPresets, se
-// crea una única pestaña con el label de la plantilla y sectionPresets adentro.
+// "tabPresets" crea la pestaña "Inicio" con sus Secciones sugeridas la primera vez que se
+// elige la plantilla — la pestaña "General" NUNCA se crea acá: todo
+// negocio ya arranca con la suya propia (ver NegocioService.guardar), y el modelo actual
+// es fijo, solo 2 pestañas por negocio: "Inicio" y "General" (ver visiblePestanas en
+// CatalogTemplateRenderer.vue, que oculta cualquier otra que haya quedado de antes).
+//
+// Todas las plantillas comparten la misma pestaña "General": un catálogo neutro con todos
+// los productos, sin el estilo decorativo del rubro. Moda y Accesorios ya tienen su
+// "Inicio" definido (portada tipo tienda real); el resto muestra un aviso de "estructura
+// por definir próximamente" en su "Inicio" hasta que se diseñe (ver isHomeTab /
+// isPendingHomeTab en CatalogTemplateRenderer.vue).
 //
 // Agregar una plantilla nueva = un objeto más acá, no un sistema nuevo.
 export const templateOptions = [
@@ -28,18 +35,13 @@ export const templateOptions = [
     label: 'Moda',
     description: 'Un diseño visual y elegante para tiendas de ropa.',
     previewGradient: 'bg-gradient-to-br from-slate-700 to-slate-900',
-    // Moda es la única plantilla que arranca con varias pestañas (como la home de una
-    // tienda de ropa real: portada + secciones por público) — el resto arranca con una
-    // sola pestaña (ver sectionPresets más abajo, usado cuando no hay tabPresets).
-    // "esHome" marca la pestaña que arma la portada especial de Moda (carrusel, mosaico de
-    // categorías, etc.) — queda guardado en la pestaña misma, así que el negocio puede
-    // renombrarla (ej. "Home" -> "Inicio") sin perder esa estructura.
+    // "Inicio" es la pestaña que arma la portada especial de Moda (carrusel, mosaico de
+    // categorías, etc.) — el nombre es fijo por ahora (ver PestanaService.crear), así que
+    // no hace falta detectarla por otra cosa que no sea el flag esHome guardado en ella.
     tabPresets: [
-      { nombre: 'Home', esHome: true, sectionPresets: ['Destacados', 'Novedades', 'Tendencias'] },
-      { nombre: 'Varones', sectionPresets: ['Catálogo'] },
-      { nombre: 'Mujeres', sectionPresets: ['Catálogo'] },
+      { nombre: 'Inicio', sectionPresets: ['Destacados', 'Novedades', 'Tendencias'] },
     ],
-    sectionPresets: ['Destacados', 'Catálogo'],
+    sectionPresets: ['Destacados', 'Novedades', 'Tendencias'],
     showCategories: true,
     showSchedule: false,
     showLocation: false,
@@ -52,6 +54,9 @@ export const templateOptions = [
     label: 'Comida / Repostería',
     description: 'Destaca tus productos y promociones.',
     previewGradient: 'bg-gradient-to-br from-amber-400 to-amber-600',
+    tabPresets: [
+      { nombre: 'Inicio', sectionPresets: ['Tortas', 'Postres', 'Cupcakes', 'Personalizados'] },
+    ],
     sectionPresets: ['Tortas', 'Postres', 'Cupcakes', 'Personalizados'],
     showCategories: true,
     showSchedule: true,
@@ -65,6 +70,9 @@ export const templateOptions = [
     label: 'Belleza',
     description: 'Una presentación elegante para productos y servicios.',
     previewGradient: 'bg-gradient-to-br from-rose-400 to-rose-600',
+    tabPresets: [
+      { nombre: 'Inicio', sectionPresets: ['Destacados', 'Servicios', 'Productos'] },
+    ],
     sectionPresets: ['Destacados', 'Servicios', 'Productos'],
     showCategories: false,
     showSchedule: false,
@@ -78,6 +86,11 @@ export const templateOptions = [
     label: 'Accesorios',
     description: 'Minimalista y enfocada en tus productos.',
     previewGradient: 'bg-gradient-to-br from-slate-400 to-slate-600',
+    // Misma portada que Moda (carrusel, mosaico, estilos, shop the look), sin las
+    // secciones 5-7 — ver isHomeTab/isModa en CatalogTemplateRenderer.vue.
+    tabPresets: [
+      { nombre: 'Inicio', sectionPresets: ['Destacados', 'Catálogo'] },
+    ],
     sectionPresets: ['Destacados', 'Catálogo'],
     showCategories: true,
     showSchedule: false,
@@ -91,6 +104,9 @@ export const templateOptions = [
     label: 'Calzado',
     description: 'Catálogo visual para mostrar tus modelos.',
     previewGradient: 'bg-gradient-to-br from-sky-400 to-sky-600',
+    tabPresets: [
+      { nombre: 'Inicio', sectionPresets: ['Novedades', 'Hombre', 'Mujer'] },
+    ],
     sectionPresets: ['Novedades', 'Hombre', 'Mujer'],
     showCategories: true,
     showSchedule: false,
@@ -104,6 +120,9 @@ export const templateOptions = [
     label: 'Barbería',
     description: 'Servicios, precios y contacto en primer plano.',
     previewGradient: 'bg-gradient-to-br from-slate-800 to-slate-950',
+    tabPresets: [
+      { nombre: 'Inicio', sectionPresets: ['Cortes', 'Barba', 'Combos', 'Diseño'] },
+    ],
     sectionPresets: ['Cortes', 'Barba', 'Combos', 'Diseño'],
     showCategories: false,
     showSchedule: true,

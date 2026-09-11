@@ -77,11 +77,20 @@ export function radiusValue(key) {
   return radiusOptions.find((r) => r.key === key)?.value || radiusOptions[1].value
 }
 
-// El fondo del catálogo (y las páginas de producto, que se navegan desde ahí) es
-// independiente del fondo del perfil público — nunca hereda el "background" que el
-// negocio eligió en Apariencia para su perfil. Por ahora, blanco fijo para todos los
-// estilos de catálogo; el resto de la apariencia (acento, tipografía, bordes, plantilla)
-// se mantiene igual.
+// El catálogo público (y las páginas de producto, que se navegan desde ahí) es
+// visualmente independiente del perfil público — nunca hereda el fondo, la tipografía,
+// los bordes ni el acento que el negocio eligió en Apariencia para SU PERFIL: esos son
+// personalización de la página de perfil, no del catálogo, que solo cambia según la
+// plantilla elegida (ver templates.js / CatalogTemplateRenderer.vue). "template" y
+// "catalogLayout" sí se mantienen — son los únicos que definen la estructura del catálogo.
 export function catalogAppearance(appearance) {
-  return { ...appearance, background: 'white', backgroundImageUrl: '' }
+  return {
+    ...appearance,
+    background: 'white',
+    backgroundImageUrl: '',
+    font: 'sans',
+    radius: 'soft',
+    accentColor: 'brand',
+    accentColorHex: '',
+  }
 }

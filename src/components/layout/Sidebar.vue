@@ -20,14 +20,14 @@ const route = useRoute()
 const { state, logout } = useAuth()
 const { info } = useToast()
 
+// "Estilo de página" vive en su propia ruta (pantalla completa, sin este sidebar — ver
+// BusinessAppearanceView.vue); el resto de los datos del negocio (perfil, info, métodos de
+// pago, enlaces) se editan desde ahí mismo, en modales flotantes sobre el perfil público en
+// vivo — ya no son submódulos aparte.
 const businessSections = [
-  { key: 'profile', label: 'Perfil' },
-  { key: 'template', label: 'Estilo del catalogo' },
-  { key: 'contact', label: 'Info del negocio' },
-  { key: 'payment', label: 'Métodos de pago' },
-  { key: 'links', label: 'Enlaces' },
-  { key: 'appearance', label: 'Estilo de pagina' },
-  { key: 'account', label: 'Cuenta' },
+  { to: { name: 'business-profile', query: { section: 'template' } }, label: 'Estilo de catálogo' },
+  { to: { name: 'business-appearance' }, label: 'Estilo de página' },
+  { to: { name: 'business-profile', query: { section: 'account' } }, label: 'Cuenta' },
 ]
 
 const nav = computed(() => [
@@ -39,8 +39,10 @@ const nav = computed(() => [
   { type: 'link', to: { name: 'memberships' }, label: 'Membresías', icon: Sparkles },
 ])
 
-const isBusinessRoute = computed(() => route.name === 'business-profile')
-const activeSection = computed(() => route.query.section || 'profile')
+const isBusinessRoute = computed(() => route.name === 'business-profile' || route.name === 'business-appearance')
+function isActiveSection(s) {
+  return route.name === s.to.name && (!s.to.query?.section || route.query.section === s.to.query.section)
+}
 const businessMenuOpen = ref(isBusinessRoute.value)
 
 watch(isBusinessRoute, (isBusiness) => {
@@ -112,11 +114,11 @@ async function handleLogout() {
           <div v-show="businessMenuOpen" class="ml-[1.15rem] mt-0.5 flex flex-col gap-0.5 border-l border-slate-200 pl-3">
             <router-link
               v-for="s in item.children"
-              :key="s.key"
-              :to="{ name: 'business-profile', query: { section: s.key } }"
+              :key="s.label"
+              :to="s.to"
               class="rounded-lg px-2.5 py-1.5 text-sm transition-colors"
               :class="
-                isBusinessRoute && activeSection === s.key
+                isActiveSection(s)
                   ? 'bg-brand-50 font-medium text-brand-700'
                   : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
               "

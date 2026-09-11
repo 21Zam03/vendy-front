@@ -76,6 +76,12 @@ const routes = [
     meta: { requiresAuth: true, title: 'Mi negocio' },
   },
   {
+    path: '/mi-negocio/estilo-de-pagina',
+    name: 'business-appearance',
+    component: () => import('@/views/BusinessAppearanceView.vue'),
+    meta: { requiresAuth: true, title: 'Estilo de página' },
+  },
+  {
     path: '/colecciones',
     name: 'collections',
     component: () => import('@/views/CollectionsView.vue'),

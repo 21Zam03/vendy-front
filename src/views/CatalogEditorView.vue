@@ -7,13 +7,12 @@ import HeroOrderModal from '@/components/storefront/HeroOrderModal.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
-import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
-import { Store, X, Rows3, Trash2, Pencil, ChevronUp, ChevronDown } from '@lucide/vue'
+import { Store, X, Rows3, Trash2, ChevronUp, ChevronDown } from '@lucide/vue'
 import { useBusiness } from '@/composables/useBusiness'
 import { listCategorias } from '@/api/categorias'
 import { listSecciones, deleteSeccion, reorderSecciones } from '@/api/secciones'
-import { listPestanas, updatePestana } from '@/api/pestanas'
+import { listPestanas, updatePestanaActiva } from '@/api/pestanas'
 import { listBanners, saveBanner, deleteBanner } from '@/api/banners'
 import { listTextos, saveTexto, deleteTexto } from '@/api/textos'
 import { listArchivos, uploadArchivo } from '@/api/archivos'
@@ -128,34 +127,21 @@ function seccionesEnPestana(pestanaId) {
   return secciones.value.filter((s) => s.pestanaId === pestanaId)
 }
 
-// Renombrar pestañas: lo único que el negocio puede cambiar de su estructura — la
-// cantidad y el orden de pestañas/secciones vienen fijos por la plantilla, así que no
-// hay opción de eliminarlas acá.
-const editingTabId = ref(null)
-const editingTabName = ref('')
-const savingTabName = ref(false)
-
-function startEditTab(pestana) {
-  editingTabId.value = pestana.id
-  editingTabName.value = pestana.nombre
-}
-
-async function saveEditTab(pestana) {
-  const nombre = editingTabName.value.trim()
-  if (!nombre || nombre === pestana.nombre) {
-    editingTabId.value = null
-    return
-  }
-  savingTabName.value = true
+// Desactivar una pestaña la oculta del catálogo público (ver visiblePestanas en
+// CatalogTemplateRenderer.vue) sin perder sus secciones/productos — a diferencia de
+// crear/renombrar/eliminar, esto sí está permitido. El backend rechaza dejar el negocio
+// sin ninguna pestaña activa.
+const togglingPestanaId = ref(null)
+async function togglePestanaActiva(pestana) {
+  togglingPestanaId.value = pestana.id
   try {
-    const updated = await updatePestana(pestana.id, { nombre })
+    const updated = await updatePestanaActiva(pestana.id, pestana.activa === false)
     const i = pestanas.value.findIndex((p) => p.id === pestana.id)
     if (i !== -1) pestanas.value[i] = updated
-    editingTabId.value = null
   } catch (err) {
-    toastError('No se pudo renombrar la pestaña', { description: err.message })
+    toastError('No se pudo cambiar el estado de la pestaña', { description: err.message })
   } finally {
-    savingTabName.value = false
+    togglingPestanaId.value = null
   }
 }
 
@@ -435,29 +421,22 @@ async function handleRemoveTitle(slot) {
     <BaseModal
       v-model="showSectionsModal"
       title="Pestañas y secciones"
-      description="Así se organiza tu catálogo: cada pestaña agrupa sus propias secciones, en este orden. La estructura viene fija según tu plantilla — no se pueden agregar pestañas ni secciones nuevas."
+      description="Así se organiza tu catálogo: cada pestaña agrupa sus propias secciones, en este orden. Inicio y General son fijas (no se pueden renombrar, agregar más pestañas ni secciones nuevas), pero puedes desactivar la que no quieras mostrar en tu catálogo."
     >
       <div class="flex flex-col gap-4">
         <div v-for="p in pestanas" :key="p.id" class="rounded-lg border border-slate-200 p-3">
-          <div v-if="editingTabId === p.id" class="mb-2 flex items-center gap-2">
-            <BaseInput
-              v-model="editingTabName"
-              class="flex-1"
-              @keyup.enter="saveEditTab(p)"
-              @keyup.escape="editingTabId = null"
-            />
-            <BaseButton size="sm" :loading="savingTabName" @click="saveEditTab(p)">Guardar</BaseButton>
-            <BaseButton size="sm" variant="outline" @click="editingTabId = null">Cancelar</BaseButton>
-          </div>
-          <div v-else class="mb-2 flex items-center justify-between gap-2">
+          <div class="mb-2 flex items-center justify-between gap-2">
             <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ p.nombre }}</p>
             <button
+              v-if="p.esHome || p.esGeneral"
               type="button"
-              class="rounded-lg p-1 text-slate-400 hover:bg-slate-100"
-              title="Renombrar pestaña"
-              @click="startEditTab(p)"
+              class="flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors disabled:opacity-50"
+              :class="p.activa !== false ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'"
+              :disabled="togglingPestanaId === p.id"
+              @click="togglePestanaActiva(p)"
             >
-              <Pencil class="size-3.5" />
+              <span class="size-1.5 rounded-full" :class="p.activa !== false ? 'bg-emerald-500' : 'bg-slate-400'" />
+              {{ p.activa !== false ? 'Activa' : 'Desactivada' }}
             </button>
           </div>
           <div class="flex flex-col gap-2">

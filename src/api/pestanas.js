@@ -16,6 +16,10 @@ export function deletePestana(id) {
   return apiFetch(`/api/v1/pestanas/${id}`, { method: 'DELETE' })
 }
 
+export function updatePestanaActiva(id, activa) {
+  return apiFetch(`/api/v1/pestanas/${id}/activa`, { method: 'PATCH', body: { activa } })
+}
+
 export function reorderPestanas(idsEnOrden) {
   return apiFetch('/api/v1/pestanas/orden', { method: 'PUT', body: idsEnOrden })
 }

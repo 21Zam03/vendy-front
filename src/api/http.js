@@ -30,11 +30,17 @@ export async function apiFetch(path, { method = 'GET', body, headers, ...rest } 
     throw new ApiError('No se pudo conectar con el servidor', 0, null)
   }
 
+  // "application/problem+json" (RFC 7807) es lo que Spring devuelve por defecto para
+  // cualquier error que el backend no maneje explícitamente — sin este chequeo, esas
+  // respuestas se leían como "sin cuerpo" y el error real se perdía detrás de un genérico
+  // "Ocurrió un error al conectar con el servidor" (sonaba a problema de red, no de datos).
   const contentType = response.headers.get('content-type') || ''
-  const data = contentType.includes('application/json') ? await response.json().catch(() => null) : null
+  const data = contentType.includes('json') ? await response.json().catch(() => null) : null
 
   if (!response.ok) {
-    const message = data?.message || 'Ocurrió un error al conectar con el servidor'
+    // data?.detail: por si el error vino como application/problem+json (ver arriba) en vez
+    // del formato propio {message: ...} — para que no se pierda el detalle igual.
+    const message = data?.message || data?.detail || 'Ocurrió un error al procesar la solicitud'
     throw new ApiError(message, response.status, data)
   }
 
