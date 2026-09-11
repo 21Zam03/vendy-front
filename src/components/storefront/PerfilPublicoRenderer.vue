@@ -40,12 +40,15 @@ const whatsappLink = computed(() =>
   buildWhatsAppLink(props.business.whatsapp, `Hola ${props.business.name}! vi tu página en Vendy y quiero más información.`),
 )
 
+// El negocio pone la URL completa de cada red (ver "Info del negocio" en el editor) — acá
+// nunca se arma un link por defecto con el dominio de la red social, se usa tal cual la
+// haya escrito.
 const socialLinks = computed(() => {
   const { social } = props.business
   return [
-    social.instagram && { label: `@${social.instagram}`, icon: InstagramIcon, href: `https://instagram.com/${social.instagram}` },
-    social.tiktok && { label: `@${social.tiktok}`, icon: TikTokIcon, href: `https://tiktok.com/@${social.tiktok}` },
-    social.facebook && { label: social.facebook, icon: FacebookIcon, href: `https://facebook.com/${social.facebook}` },
+    social.instagram && { label: 'Instagram', icon: InstagramIcon, href: social.instagram },
+    social.tiktok && { label: 'TikTok', icon: TikTokIcon, href: social.tiktok },
+    social.facebook && { label: 'Facebook', icon: FacebookIcon, href: social.facebook },
   ].filter(Boolean)
 })
 

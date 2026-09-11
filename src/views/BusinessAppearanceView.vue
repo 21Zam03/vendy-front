@@ -335,15 +335,16 @@ function cerrarModal() {
           Se mostrará como <span class="font-medium text-slate-600">{{ formatPhone(business.whatsapp) }}</span>.
           Las consultas de tus productos llegarán a este número por WhatsApp.
         </p>
-        <BaseInput v-model="business.social.instagram" label="Instagram (opcional)" placeholder="tunegocio">
+        <BaseInput v-model="business.social.instagram" label="Instagram (opcional)" placeholder="https://instagram.com/tunegocio">
           <template #icon><InstagramIcon class="size-4" /></template>
         </BaseInput>
-        <BaseInput v-model="business.social.tiktok" label="TikTok (opcional)" placeholder="tunegocio">
+        <BaseInput v-model="business.social.tiktok" label="TikTok (opcional)" placeholder="https://tiktok.com/@tunegocio">
           <template #icon><TikTokIcon class="size-4" /></template>
         </BaseInput>
-        <BaseInput v-model="business.social.facebook" label="Facebook (opcional)" placeholder="tunegocio">
+        <BaseInput v-model="business.social.facebook" label="Facebook (opcional)" placeholder="https://facebook.com/tunegocio">
           <template #icon><FacebookIcon class="size-4" /></template>
         </BaseInput>
+        <p class="-mt-2 text-xs text-slate-400">Pega el link completo de cada red — no hace falta escribir solo el usuario.</p>
 
         <div class="flex justify-end">
           <BaseButton type="submit" :loading="saving">Guardar cambios</BaseButton>
